@@ -9,6 +9,7 @@ from pathlib import Path
 from uuid import uuid4
 
 from .domain.window import date_window
+from .discovery.plan import build_plan
 from .orchestration.period import choose_period
 
 
@@ -30,7 +31,30 @@ def main() -> None:
     init.add_argument("--start-date", type=date.fromisoformat, help="Explicit start date, YYYY-MM-DD")
     init.add_argument("--end-date", type=date.fromisoformat, help="Explicit inclusive end date, YYYY-MM-DD")
     init.add_argument("--data-dir", type=Path, default=Path("data"))
+    plan = commands.add_parser("plan-search", help="Save search plan for a confirmed run; no network")
+    plan.add_argument("--run-dir", type=Path, required=True)
+    plan.add_argument("--config-dir", type=Path, default=Path("config"))
     args = parser.parse_args()
+
+    if args.command == "plan-search":
+        try:
+            def read_json(path):
+                return json.loads(path.read_text(encoding="utf-8"))
+
+            result = build_plan(
+                read_json(args.config_dir / "companies.json"),
+                read_json(args.config_dir / "sources.json"),
+                read_json(args.config_dir / "queries.json"),
+                read_json(args.run_dir / "manifest.json"),
+            )
+            # Exclusive creation preserves an existing plan and its provenance.
+            with (args.run_dir / "search_plan.json").open("x", encoding="utf-8", newline="\n") as output:
+                json.dump(result, output, ensure_ascii=False, indent=2)
+                output.write("\n")
+        except (OSError, ValueError, KeyError) as exc:
+            parser.error(str(exc))
+        print(f"Saved {result['query_count']} planned queries; no search has run.")
+        return
 
     if (args.start_date is None) != (args.end_date is None):
         parser.error("--start-date and --end-date must be provided together")

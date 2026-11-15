@@ -1,0 +1,68 @@
+{
+  "version": "0.4",
+  "status": "research_candidates_not_promoted",
+  "researched_on": "2026-11-15",
+  "purpose": "Примеры обнаружения вне фиксированного списка. Это кандидаты для дальнейшей проверки, не новости текущего выпуска и не доказательство мировой новизны.",
+  "candidates": [
+    {
+      "id": "juno",
+      "name": "Juno",
+      "official_url": "https://hello-juno.com/",
+      "source_urls": [
+        "https://hello-juno.com/"
+      ],
+      "mechanism": "Разговорный AI-матчмейкер; изучить модель оплаты и путь к реальной встрече",
+      "stage_claim": "beta / предстоящий запуск по заявлению сервиса",
+      "verification_status": "primary_source_identified_novelty_unverified",
+      "why_relevant": "AI-онбординг и подбор вместо свайпов"
+    },
+    {
+      "id": "within_social",
+      "name": "Within Social",
+      "official_url": "https://www.withinsocial.com/about",
+      "source_urls": [
+        "https://www.withinsocial.com/about"
+      ],
+      "mechanism": "Подбор через сеть взаимных реальных связей с AI",
+      "stage_claim": "Сервис указывает запуск в Austin в мае 2026; не считать новым запуском текущего периода",
+      "verification_status": "primary_source_identified_novelty_unverified",
+      "why_relevant": "Доверие через социальный граф"
+    },
+    {
+      "id": "crowdmatch",
+      "name": "CrowdMatch",
+      "official_url": null,
+      "source_urls": [
+        "https://www.datingindustryinsights.com/directory/startups"
+      ],
+      "mechanism": "Другие участники голосуют за пары; проверить реализацию на официальном ресурсе",
+      "stage_claim": "2026 по отраслевому каталогу",
+      "verification_status": "secondary_source_only",
+      "why_relevant": "Community-driven matchmaking"
+    },
+    {
+      "id": "fledge",
+      "name": "Fledge",
+      "official_url": null,
+      "source_urls": [
+        "https://www.datingindustryinsights.com/directory/startups"
+      ],
+      "mechanism": "Совместимость; уникальность и монетизация ещё не установлены",
+      "stage_claim": "2026 по отраслевому каталогу",
+      "verification_status": "secondary_source_only",
+      "why_relevant": "Кандидат, а не готовая сильная новость; без новой механики в выпуск не включать"
+    },
+    {
+      "id": "overtone",
+      "name": "Overtone",
+      "official_url": null,
+      "source_urls": [
+        "https://www.fastcompany.com/91574215/hinge-founders-new-dating-app-lets-ai-be-your-matchmaker-theres-already-a-waitlist-overtone"
+      ],
+      "mechanism": "Голосовой онбординг и курируемые знакомства; проверить первоисточник и актуальную стадию",
+      "stage_claim": "Подготовка запуска по материалу июля 2026",
+      "verification_status": "secondary_source_only",
+      "why_relevant": "Альтернативная AI-модель мэтчинга; связь с рынком крупных игроков"
+    }
+  ]
+}

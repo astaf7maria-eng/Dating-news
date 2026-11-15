@@ -1,0 +1,167 @@
+{
+  "version": "0.4",
+  "status": "user_accepted_golden_set",
+  "purpose": "Эталон тематики и обязательного поискового покрытия; все упомянутые компании должны искаться и найденные статьи сохраняться до top-10",
+  "source": "Примеры пользователя; оригинал хранится локально и исключён из Git",
+  "source_fact_verification": "Признание эталоном отбора не заменяет проверку текста, дат и чисел при загрузке",
+  "live_window_policy": "Старые примеры не обязаны попадать в новый выбранный период. Оценка исторического recall проводится отдельно от актуального выпуска.",
+  "reference_article_policy": "В будущем reference-import загрузит указанные URL отдельно от live-периода; пока сохранены ссылки и требования, не полные тексты",
+  "cases": [
+    {
+      "id": "tinder_product",
+      "example_number": 1,
+      "company_ids": [
+        "tinder",
+        "match_group"
+      ],
+      "section_ids": [
+        "features"
+      ],
+      "source_urls": [
+        "https://www.globaldatinginsights.com/featured/match-group-q3-2026-results-hinge-growth-and-new-plans-for-tinder/"
+      ],
+      "expected": "Найти/загрузить и сохранить при проверке reference-корпуса; для live — искать компании в выбранном периоде"
+    },
+    {
+      "id": "hinge_pricing",
+      "example_number": 2,
+      "company_ids": [
+        "hinge"
+      ],
+      "section_ids": [
+        "monetization"
+      ],
+      "source_urls": [
+        "https://techcrunch.com/2026/11/02/hinge-tests-a-cheaper-plan-as-users-become-more-fed-up-paying-for-dating-apps/"
+      ],
+      "expected": "Найти/загрузить и сохранить при проверке reference-корпуса; для live — искать компании в выбранном периоде"
+    },
+    {
+      "id": "grindr_edge",
+      "example_number": 3,
+      "company_ids": [
+        "grindr",
+        "freddie"
+      ],
+      "section_ids": [
+        "monetization",
+        "ai",
+        "business"
+      ],
+      "source_urls": [
+        "https://www.globaldatinginsights.com/featured/grindr-q3-2026-results/"
+      ],
+      "expected": "Найти/загрузить и сохранить при проверке reference-корпуса; для live — искать компании в выбранном периоде"
+    },
+    {
+      "id": "dating_malware",
+      "example_number": 4,
+      "company_ids": [],
+      "section_ids": [
+        "trust_safety"
+      ],
+      "source_urls": [
+        "https://www.vedomosti.ru/society/news/2026/11/08/1243462-mvd-moshenniki-zarazhayut"
+      ],
+      "expected": "Найти/загрузить и сохранить при проверке reference-корпуса; для live — искать компании в выбранном периоде"
+    },
+    {
+      "id": "match_ai_agents",
+      "example_number": 5,
+      "company_ids": [
+        "match_group",
+        "tinder",
+        "hinge"
+      ],
+      "section_ids": [
+        "ai"
+      ],
+      "source_urls": [
+        "https://www.globaldatinginsights.com/featured/match-group-ai-agents-tinder-hinge/"
+      ],
+      "expected": "Найти/загрузить и сохранить при проверке reference-корпуса; для live — искать компании в выбранном периоде"
+    },
+    {
+      "id": "liangpei_refund",
+      "example_number": 6,
+      "company_ids": [
+        "liangpei_ai"
+      ],
+      "section_ids": [
+        "new_models",
+        "monetization",
+        "trust_safety",
+        "ai"
+      ],
+      "source_urls": [
+        "https://news.ru/asia/servis-znakomstv-nachnet-platit-polzovatelyam",
+        "https://news.mail.ru/society/73020384/"
+      ],
+      "expected": "Найти/загрузить и сохранить при проверке reference-корпуса; для live — искать компании в выбранном периоде"
+    },
+    {
+      "id": "pure_model",
+      "example_number": 7,
+      "company_ids": [
+        "pure"
+      ],
+      "section_ids": [
+        "new_models",
+        "business",
+        "ai"
+      ],
+      "source_urls": [
+        "https://www.globaldatinginsights.com/featured/pure-dating-app-revenue-2026/"
+      ],
+      "expected": "Найти/загрузить и сохранить при проверке reference-корпуса; для live — искать компании в выбранном периоде"
+    },
+    {
+      "id": "match_results",
+      "example_number": 8,
+      "company_ids": [
+        "match_group",
+        "hinge"
+      ],
+      "section_ids": [
+        "business"
+      ],
+      "source_urls": [
+        "https://www.globaldatinginsights.com/featured/match-group-q3-2026-results-hinge-growth-and-new-plans-for-tinder/"
+      ],
+      "expected": "Найти/загрузить и сохранить при проверке reference-корпуса; для live — искать компании в выбранном периоде"
+    },
+    {
+      "id": "bumble_business",
+      "example_number": 9,
+      "company_ids": [
+        "bumble",
+        "ithaca"
+      ],
+      "section_ids": [
+        "business"
+      ],
+      "source_urls": [
+        "https://www.globaldatinginsights.com/featured/bumble-q3-2026-results/",
+        "https://www.panabee.com/news/bumble-earnings-q3-2026"
+      ],
+      "expected": "Найти/загрузить и сохранить при проверке reference-корпуса; для live — искать компании в выбранном периоде"
+    },
+    {
+      "id": "world_survey",
+      "example_number": 10,
+      "company_ids": [
+        "world",
+        "harris_poll",
+        "tinder"
+      ],
+      "section_ids": [
+        "marketing",
+        "trust_safety"
+      ],
+      "source_urls": [
+        "https://www.globaldatinginsights.com/featured/dating-app-verification-world-survey/"
+      ],
+      "expected": "Найти/загрузить и сохранить при проверке reference-корпуса; для live — искать компании в выбранном периоде"
+    }
+  ]
+}

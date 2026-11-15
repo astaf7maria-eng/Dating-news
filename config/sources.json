@@ -1,16 +1,544 @@
 {
-  "version": "0.2",
-  "status": "unverified_seed_from_user_examples",
+  "version": "0.4",
+  "status": "source_registry_v1",
   "sources": [
-    {"id": "gdi", "name": "Global Dating Insights", "url": "https://www.globaldatinginsights.com/", "kind": "industry_media", "language": "en", "fetch_method": "search", "enabled": false, "verification_status": "pending"},
-    {"id": "techcrunch", "name": "TechCrunch", "url": "https://techcrunch.com/", "kind": "industry_media", "language": "en", "fetch_method": "search", "enabled": false, "verification_status": "pending"},
-    {"id": "vedomosti", "name": "Ведомости", "url": "https://www.vedomosti.ru/", "kind": "general_media", "language": "ru", "fetch_method": "search", "enabled": false, "verification_status": "pending"},
-    {"id": "news_ru", "name": "NEWS.ru", "url": "https://news.ru/", "kind": "general_media", "language": "ru", "fetch_method": "search", "enabled": false, "verification_status": "pending"},
-    {"id": "mail_news", "name": "Новости Mail", "url": "https://news.mail.ru/", "kind": "general_media", "language": "ru", "fetch_method": "search", "enabled": false, "verification_status": "pending"},
-    {"id": "panabee", "name": "Panabee", "url": "https://www.panabee.com/", "kind": "general_media", "language": "en", "fetch_method": "search", "enabled": false, "verification_status": "pending"}
+    {
+      "id": "tinder_newsroom",
+      "name": "Tinder Newsroom",
+      "url": "https://www.tinderpressroom.com/",
+      "kind": "official_newsroom",
+      "language": "en",
+      "company_ids": [
+        "tinder"
+      ],
+      "fetch_method": "search",
+      "enabled": true,
+      "verification_status": "official_source_identified",
+      "checked_on": "2026-11-15",
+      "verification_scope": "Идентификация источника; загрузка полного текста и дат адаптером ещё не проверена"
+    },
+    {
+      "id": "hinge_newsroom",
+      "name": "Hinge Newsroom",
+      "url": "https://hinge.co/newsroom",
+      "kind": "official_newsroom",
+      "language": "en",
+      "company_ids": [
+        "hinge"
+      ],
+      "fetch_method": "search",
+      "enabled": true,
+      "verification_status": "official_source_identified",
+      "checked_on": "2026-11-15",
+      "verification_scope": "Идентификация источника; загрузка полного текста и дат адаптером ещё не проверена"
+    },
+    {
+      "id": "match_ir",
+      "name": "Match Group IR",
+      "url": "https://ir.mtch.com/investor-relations/overview/default.aspx",
+      "kind": "investor_relations",
+      "language": "en",
+      "company_ids": [
+        "match_group",
+        "tinder",
+        "hinge"
+      ],
+      "fetch_method": "search",
+      "enabled": true,
+      "verification_status": "official_source_identified",
+      "checked_on": "2026-11-15",
+      "verification_scope": "Идентификация источника; загрузка полного текста и дат адаптером ещё не проверена"
+    },
+    {
+      "id": "bumble_ir",
+      "name": "Bumble Inc. IR",
+      "url": "https://ir.bumble.com/overview/default.aspx",
+      "kind": "investor_relations",
+      "language": "en",
+      "company_ids": [
+        "bumble",
+        "badoo",
+        "ithaca"
+      ],
+      "fetch_method": "search",
+      "enabled": true,
+      "verification_status": "official_source_identified",
+      "checked_on": "2026-11-15",
+      "verification_scope": "Идентификация источника; загрузка полного текста и дат адаптером ещё не проверена"
+    },
+    {
+      "id": "bumble_buzz",
+      "name": "Bumble Buzz",
+      "url": "https://bumble.com/the-buzz",
+      "kind": "official_blog",
+      "language": "en",
+      "company_ids": [
+        "bumble"
+      ],
+      "fetch_method": "search",
+      "enabled": true,
+      "verification_status": "official_source_identified",
+      "checked_on": "2026-11-15",
+      "verification_scope": "Идентификация источника; загрузка полного текста и дат адаптером ещё не проверена"
+    },
+    {
+      "id": "badoo_site",
+      "name": "Badoo",
+      "url": "https://badoo.com/",
+      "kind": "official_site",
+      "language": "en",
+      "company_ids": [
+        "badoo"
+      ],
+      "fetch_method": "search",
+      "enabled": true,
+      "verification_status": "official_source_identified",
+      "checked_on": "2026-11-15",
+      "verification_scope": "Идентификация источника; загрузка полного текста и дат адаптером ещё не проверена"
+    },
+    {
+      "id": "grindr_blog",
+      "name": "Grindr Blog / Newsroom",
+      "url": "https://www.grindr.com/blog",
+      "kind": "official_blog",
+      "language": "en",
+      "company_ids": [
+        "grindr"
+      ],
+      "fetch_method": "search",
+      "enabled": true,
+      "verification_status": "official_source_identified",
+      "checked_on": "2026-11-15",
+      "verification_scope": "Идентификация источника; загрузка полного текста и дат адаптером ещё не проверена"
+    },
+    {
+      "id": "grindr_ir",
+      "name": "Grindr IR News",
+      "url": "https://investors.grindr.com/news/default.aspx",
+      "kind": "investor_relations",
+      "language": "en",
+      "company_ids": [
+        "grindr",
+        "freddie"
+      ],
+      "fetch_method": "search",
+      "enabled": true,
+      "verification_status": "official_source_identified",
+      "checked_on": "2026-11-15",
+      "verification_scope": "Идентификация источника; загрузка полного текста и дат адаптером ещё не проверена"
+    },
+    {
+      "id": "pure_newsroom",
+      "name": "PURE Newsroom",
+      "url": "https://press.pure.app/en/",
+      "kind": "official_newsroom",
+      "language": "en",
+      "company_ids": [
+        "pure"
+      ],
+      "fetch_method": "search",
+      "enabled": true,
+      "verification_status": "official_source_identified",
+      "checked_on": "2026-11-15",
+      "verification_scope": "Идентификация источника; загрузка полного текста и дат адаптером ещё не проверена"
+    },
+    {
+      "id": "world_blog",
+      "name": "World announcements",
+      "url": "https://world.org/blog/announcements/online-dating-gaming-event-tickets-proof-of-human-everyday-life",
+      "kind": "official_blog",
+      "language": "en",
+      "company_ids": [
+        "world"
+      ],
+      "fetch_method": "search",
+      "enabled": true,
+      "verification_status": "official_source_identified",
+      "checked_on": "2026-11-15",
+      "verification_scope": "Идентификация источника; загрузка полного текста и дат адаптером ещё не проверена"
+    },
+    {
+      "id": "harris_poll",
+      "name": "The Harris Poll",
+      "url": "https://theharrispoll.com/articles/america-this-week-november-5-2026/",
+      "kind": "official_research",
+      "language": "en",
+      "company_ids": [
+        "harris_poll",
+        "world"
+      ],
+      "fetch_method": "search",
+      "enabled": true,
+      "verification_status": "official_source_identified",
+      "checked_on": "2026-11-15",
+      "verification_scope": "Идентификация источника; загрузка полного текста и дат адаптером ещё не проверена"
+    },
+    {
+      "id": "mamba_group",
+      "name": "Mamba Group",
+      "url": "https://mamba.group/",
+      "kind": "official_newsroom",
+      "language": "ru",
+      "company_ids": [
+        "mamba",
+        "teamo"
+      ],
+      "fetch_method": "search",
+      "enabled": true,
+      "verification_status": "official_source_identified",
+      "checked_on": "2026-11-15",
+      "verification_scope": "Идентификация источника; загрузка полного текста и дат адаптером ещё не проверена"
+    },
+    {
+      "id": "twinby_site",
+      "name": "Twinby",
+      "url": "https://twinby.ru/",
+      "kind": "official_site",
+      "language": "ru",
+      "company_ids": [
+        "twinby"
+      ],
+      "fetch_method": "search",
+      "enabled": true,
+      "verification_status": "official_source_identified",
+      "checked_on": "2026-11-15",
+      "verification_scope": "Идентификация источника; загрузка полного текста и дат адаптером ещё не проверена"
+    },
+    {
+      "id": "vk_press",
+      "name": "VK пресс-релизы",
+      "url": "https://vk.company.ru/ru/press/releases/",
+      "kind": "official_newsroom",
+      "language": "ru",
+      "company_ids": [
+        "vk_dating"
+      ],
+      "fetch_method": "search",
+      "enabled": true,
+      "verification_status": "official_source_identified",
+      "checked_on": "2026-11-15",
+      "verification_scope": "Идентификация источника; загрузка полного текста и дат адаптером ещё не проверена"
+    },
+    {
+      "id": "teamo_site",
+      "name": "Teamo",
+      "url": "https://teamo.ru/",
+      "kind": "official_site",
+      "language": "ru",
+      "company_ids": [
+        "teamo"
+      ],
+      "fetch_method": "search",
+      "enabled": true,
+      "verification_status": "official_source_identified",
+      "checked_on": "2026-11-15",
+      "verification_scope": "Идентификация источника; загрузка полного текста и дат адаптером ещё не проверена"
+    },
+    {
+      "id": "loveplanet_site",
+      "name": "LovePlanet",
+      "url": "https://loveplanet.ru/",
+      "kind": "official_site",
+      "language": "ru",
+      "company_ids": [
+        "loveplanet"
+      ],
+      "fetch_method": "search",
+      "enabled": true,
+      "verification_status": "official_source_identified",
+      "checked_on": "2026-11-15",
+      "verification_scope": "Идентификация источника; загрузка полного текста и дат адаптером ещё не проверена"
+    },
+    {
+      "id": "feeld_site",
+      "name": "Feeld",
+      "url": "https://feeld.co/",
+      "kind": "official_site",
+      "language": "en",
+      "company_ids": [
+        "feeld"
+      ],
+      "fetch_method": "search",
+      "enabled": true,
+      "verification_status": "official_source_identified",
+      "checked_on": "2026-11-15",
+      "verification_scope": "Идентификация источника; загрузка полного текста и дат адаптером ещё не проверена"
+    },
+    {
+      "id": "happn_site",
+      "name": "happn",
+      "url": "https://www.happn.com/",
+      "kind": "official_site",
+      "language": "en",
+      "company_ids": [
+        "happn"
+      ],
+      "fetch_method": "search",
+      "enabled": true,
+      "verification_status": "official_source_identified",
+      "checked_on": "2026-11-15",
+      "verification_scope": "Идентификация источника; загрузка полного текста и дат адаптером ещё не проверена"
+    },
+    {
+      "id": "cmb_site",
+      "name": "Coffee Meets Bagel",
+      "url": "https://www.coffeemeetsbagel.com/",
+      "kind": "official_site",
+      "language": "en",
+      "company_ids": [
+        "coffee_meets_bagel"
+      ],
+      "fetch_method": "search",
+      "enabled": true,
+      "verification_status": "official_source_identified",
+      "checked_on": "2026-11-15",
+      "verification_scope": "Идентификация источника; загрузка полного текста и дат адаптером ещё не проверена"
+    },
+    {
+      "id": "pairs_site",
+      "name": "Pairs",
+      "url": "https://www.pairs.lv/",
+      "kind": "official_site",
+      "language": "ja",
+      "company_ids": [
+        "pairs"
+      ],
+      "fetch_method": "search",
+      "enabled": true,
+      "verification_status": "official_source_identified",
+      "checked_on": "2026-11-15",
+      "verification_scope": "Идентификация источника; загрузка полного текста и дат адаптером ещё не проверена"
+    },
+    {
+      "id": "tapple_site",
+      "name": "tapple",
+      "url": "https://tapple.me/",
+      "kind": "official_site",
+      "language": "ja",
+      "company_ids": [
+        "tapple"
+      ],
+      "fetch_method": "search",
+      "enabled": true,
+      "verification_status": "official_source_identified",
+      "checked_on": "2026-11-15",
+      "verification_scope": "Идентификация источника; загрузка полного текста и дат адаптером ещё не проверена"
+    },
+    {
+      "id": "hily_site",
+      "name": "Hily",
+      "url": "https://hily.com/",
+      "kind": "official_site",
+      "language": "en",
+      "company_ids": [
+        "hily"
+      ],
+      "fetch_method": "search",
+      "enabled": true,
+      "verification_status": "official_source_identified",
+      "checked_on": "2026-11-15",
+      "verification_scope": "Идентификация источника; загрузка полного текста и дат адаптером ещё не проверена"
+    },
+    {
+      "id": "boo_site",
+      "name": "Boo",
+      "url": "https://boo.world/",
+      "kind": "official_site",
+      "language": "en",
+      "company_ids": [
+        "boo"
+      ],
+      "fetch_method": "search",
+      "enabled": true,
+      "verification_status": "official_source_identified",
+      "checked_on": "2026-11-15",
+      "verification_scope": "Идентификация источника; загрузка полного текста и дат адаптером ещё не проверена"
+    },
+    {
+      "id": "breeze_faq",
+      "name": "Breeze FAQ",
+      "url": "https://www.breeze.social/faq",
+      "kind": "official_site",
+      "language": "en",
+      "company_ids": [
+        "breeze"
+      ],
+      "fetch_method": "search",
+      "enabled": true,
+      "verification_status": "official_source_identified",
+      "checked_on": "2026-11-15",
+      "verification_scope": "Идентификация источника; загрузка полного текста и дат адаптером ещё не проверена"
+    },
+    {
+      "id": "thursday_site",
+      "name": "Thursday",
+      "url": "https://www.thursday.com/",
+      "kind": "official_site",
+      "language": "en",
+      "company_ids": [
+        "thursday"
+      ],
+      "fetch_method": "search",
+      "enabled": true,
+      "verification_status": "redirect_identified_extraction_pending",
+      "checked_on": "2026-11-15",
+      "verification_scope": "Идентификация источника; загрузка полного текста и дат адаптером ещё не проверена"
+    },
+    {
+      "id": "sitch_terms",
+      "name": "Sitch terms",
+      "url": "https://content.sitch.net/terms-of-use",
+      "kind": "official_site",
+      "language": "en",
+      "company_ids": [
+        "sitch"
+      ],
+      "fetch_method": "search",
+      "enabled": true,
+      "verification_status": "official_terms_only",
+      "checked_on": "2026-11-15",
+      "verification_scope": "Идентификация источника; загрузка полного текста и дат адаптером ещё не проверена"
+    },
+    {
+      "id": "gdi",
+      "name": "Global Dating Insights",
+      "url": "https://www.globaldatinginsights.com/",
+      "kind": "industry_media",
+      "language": "en",
+      "company_ids": [],
+      "fetch_method": "search",
+      "enabled": true,
+      "verification_status": "page_opened",
+      "checked_on": "2026-11-15",
+      "priority": "discovery",
+      "full_text_access": "not_tested"
+    },
+    {
+      "id": "dating_industry_insights",
+      "name": "Dating Industry Insights",
+      "url": "https://www.datingindustryinsights.com/",
+      "kind": "industry_media",
+      "language": "en",
+      "company_ids": [],
+      "fetch_method": "search",
+      "enabled": true,
+      "verification_status": "page_opened",
+      "checked_on": "2026-11-15",
+      "priority": "discovery",
+      "full_text_access": "not_tested"
+    },
+    {
+      "id": "techcrunch",
+      "name": "TechCrunch",
+      "url": "https://techcrunch.com/",
+      "kind": "industry_media",
+      "language": "en",
+      "company_ids": [],
+      "fetch_method": "search",
+      "enabled": true,
+      "verification_status": "search_results_identified",
+      "checked_on": "2026-11-15",
+      "priority": "discovery",
+      "full_text_access": "not_tested"
+    },
+    {
+      "id": "36kr",
+      "name": "36Kr",
+      "url": "https://eu.36kr.com/",
+      "kind": "industry_media",
+      "language": "en",
+      "available_languages": ["zh", "en"],
+      "company_ids": [],
+      "fetch_method": "search",
+      "enabled": true,
+      "verification_status": "article_identified",
+      "checked_on": "2026-11-15",
+      "priority": "discovery",
+      "full_text_access": "not_tested"
+    },
+    {
+      "id": "vedomosti",
+      "name": "Ведомости",
+      "url": "https://www.vedomosti.ru/",
+      "kind": "general_media",
+      "language": "ru",
+      "company_ids": [],
+      "fetch_method": "search",
+      "enabled": true,
+      "verification_status": "user_golden_source",
+      "checked_on": null,
+      "priority": "corroboration",
+      "full_text_access": "not_tested"
+    },
+    {
+      "id": "news_ru",
+      "name": "NEWS.ru",
+      "url": "https://news.ru/",
+      "kind": "general_media",
+      "language": "ru",
+      "company_ids": [],
+      "fetch_method": "search",
+      "enabled": true,
+      "verification_status": "user_golden_source",
+      "checked_on": null,
+      "priority": "corroboration",
+      "full_text_access": "not_tested"
+    },
+    {
+      "id": "mail_news",
+      "name": "Новости Mail",
+      "url": "https://news.mail.ru/",
+      "kind": "general_media",
+      "language": "ru",
+      "company_ids": [],
+      "fetch_method": "search",
+      "enabled": true,
+      "verification_status": "user_golden_source",
+      "checked_on": null,
+      "priority": "corroboration",
+      "full_text_access": "not_tested"
+    },
+    {
+      "id": "panabee",
+      "name": "Panabee",
+      "url": "https://www.panabee.com/",
+      "kind": "general_media",
+      "language": "en",
+      "company_ids": [],
+      "fetch_method": "search",
+      "enabled": true,
+      "verification_status": "user_golden_source",
+      "checked_on": null,
+      "priority": "corroboration",
+      "full_text_access": "not_tested"
+    }
   ],
-  "coverage_gaps": ["Добавить проверенные официальные newsroom/blog/release notes и investor relations", "Проверить оригиналы источников, упомянутых внутри перепечаток"],
-  "allowed_kinds": ["official_newsroom", "official_blog", "release_notes", "investor_relations", "app_store", "industry_media", "general_media"],
-  "allowed_fetch_methods": ["rss", "search", "html", "api"],
-  "notes": "Домены взяты из ссылок в пользовательских примерах, не проверены в сети. Ссылки на конкретные статьи сохранены в оригинале примеров."
+  "allowed_kinds": [
+    "official_newsroom",
+    "official_blog",
+    "official_site",
+    "official_research",
+    "release_notes",
+    "investor_relations",
+    "app_store",
+    "industry_media",
+    "general_media"
+  ],
+  "allowed_fetch_methods": [
+    "rss",
+    "search",
+    "html",
+    "api"
+  ],
+  "source_policy": {
+    "priority": [
+      "official_product_or_company_source",
+      "industry_media",
+      "general_media"
+    ],
+    "site_query_scope": "Для official_site искать только продуктовые страницы, новости, цены и политики. Анкеты, чаты и персональные данные не собирать.",
+    "language": "ru/en основной поиск; zh для Liangpei и discovery; ja discovery по новым моделям",
+    "unknown_access": "enabled означает участвовать в поиске, а не гарантированную доступность полного текста; адаптеры проверяются на этапе ingestion",
+    "golden_sources": "Ссылки из примеров сохраняются как seeds независимо от будущего редакционного рейтинга"
+  }
 }

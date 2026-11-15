@@ -1,16 +1,878 @@
 {
-  "version": "0.2",
-  "status": "unverified_seed_from_user_examples",
-  "companies": [
-    {"id": "match_group", "name": "Match Group", "aliases": ["Match"], "parent_company_id": null, "official_domains": [], "enabled": false, "verification_status": "pending"},
-    {"id": "tinder", "name": "Tinder", "aliases": ["Тиндер"], "parent_company_id": "match_group", "official_domains": [], "enabled": false, "verification_status": "pending"},
-    {"id": "hinge", "name": "Hinge", "aliases": ["Хиндж"], "parent_company_id": "match_group", "official_domains": [], "enabled": false, "verification_status": "pending"},
-    {"id": "grindr", "name": "Grindr", "aliases": ["Гриндр"], "parent_company_id": null, "official_domains": [], "enabled": false, "verification_status": "pending"},
-    {"id": "bumble", "name": "Bumble", "aliases": ["Бамбл"], "parent_company_id": null, "official_domains": [], "enabled": false, "verification_status": "pending"},
-    {"id": "pure", "name": "Pure", "aliases": ["Пьюр"], "parent_company_id": null, "official_domains": [], "enabled": false, "verification_status": "pending"},
-    {"id": "liangpei_ai", "name": "Liangpei AI", "aliases": [], "parent_company_id": null, "official_domains": [], "enabled": false, "verification_status": "pending"},
-    {"id": "world", "name": "World", "aliases": ["World ID"], "parent_company_id": null, "official_domains": [], "enabled": false, "verification_status": "pending", "scope": "смежный сервис верификации при связи с dating"}
+  "version": "0.4",
+  "status": "monitoring_catalog_v1",
+  "checked_on": "2026-11-15",
+  "required_always_company_ids": [
+    "tinder",
+    "badoo",
+    "bumble",
+    "hinge",
+    "grindr"
   ],
-  "coverage_gaps": ["Российские dating-компании ещё не исследованы", "Международный список не исчерпывающий", "Домены, алиасы и связи компаний требуют внешней проверки"],
-  "notes": "Кандидаты из примеров пользователя, не проверенный список рынка. Непроверенные записи отключены от автоматического сбора."
+  "golden_set_company_ids": [
+    "match_group",
+    "pure",
+    "liangpei_ai",
+    "world"
+  ],
+  "golden_adjacent_company_ids": [
+    "freddie",
+    "ithaca",
+    "harris_poll"
+  ],
+  "companies": [
+    {
+      "id": "tinder",
+      "name": "Tinder",
+      "tier": "always",
+      "aliases": [
+        "Tinder",
+        "Тиндер"
+      ],
+      "official_domains": [
+        "tinderpressroom.com",
+        "tinder.com"
+      ],
+      "enabled": true,
+      "mandatory_monitoring": true,
+      "search_languages": [
+        "ru",
+        "en"
+      ],
+      "verification_status": "official_source_identified",
+      "evidence_urls": [
+        "https://www.tinderpressroom.com/"
+      ],
+      "checked_on": "2026-11-15",
+      "source_ids": [
+        "tinder_newsroom",
+        "match_ir"
+      ]
+    },
+    {
+      "id": "badoo",
+      "name": "Badoo",
+      "tier": "always",
+      "aliases": [
+        "Badoo",
+        "Баду"
+      ],
+      "official_domains": [
+        "badoo.com"
+      ],
+      "enabled": true,
+      "mandatory_monitoring": true,
+      "search_languages": [
+        "ru",
+        "en"
+      ],
+      "verification_status": "official_source_identified",
+      "evidence_urls": [
+        "https://badoo.com/"
+      ],
+      "checked_on": "2026-11-15",
+      "source_ids": [
+        "badoo_site",
+        "bumble_ir"
+      ]
+    },
+    {
+      "id": "bumble",
+      "name": "Bumble",
+      "tier": "always",
+      "aliases": [
+        "Bumble",
+        "Бамбл"
+      ],
+      "official_domains": [
+        "bumble.com",
+        "ir.bumble.com"
+      ],
+      "enabled": true,
+      "mandatory_monitoring": true,
+      "search_languages": [
+        "ru",
+        "en"
+      ],
+      "verification_status": "official_source_identified",
+      "evidence_urls": [
+        "https://ir.bumble.com/overview/default.aspx"
+      ],
+      "checked_on": "2026-11-15",
+      "source_ids": [
+        "bumble_buzz",
+        "bumble_ir"
+      ]
+    },
+    {
+      "id": "hinge",
+      "name": "Hinge",
+      "tier": "always",
+      "aliases": [
+        "Hinge",
+        "Хиндж"
+      ],
+      "official_domains": [
+        "hinge.co"
+      ],
+      "enabled": true,
+      "mandatory_monitoring": true,
+      "search_languages": [
+        "ru",
+        "en"
+      ],
+      "verification_status": "official_source_identified",
+      "evidence_urls": [
+        "https://hinge.co/newsroom"
+      ],
+      "checked_on": "2026-11-15",
+      "source_ids": [
+        "hinge_newsroom",
+        "match_ir"
+      ]
+    },
+    {
+      "id": "grindr",
+      "name": "Grindr",
+      "tier": "always",
+      "aliases": [
+        "Grindr",
+        "Гриндр"
+      ],
+      "official_domains": [
+        "grindr.com",
+        "investors.grindr.com"
+      ],
+      "enabled": true,
+      "mandatory_monitoring": true,
+      "search_languages": [
+        "ru",
+        "en"
+      ],
+      "verification_status": "official_source_identified",
+      "evidence_urls": [
+        "https://www.grindr.com/blog",
+        "https://investors.grindr.com/news/default.aspx"
+      ],
+      "checked_on": "2026-11-15",
+      "source_ids": [
+        "grindr_blog",
+        "grindr_ir"
+      ]
+    },
+    {
+      "id": "match_group",
+      "name": "Match Group",
+      "tier": "golden_set",
+      "aliases": [
+        "Match Group",
+        "MTCH"
+      ],
+      "official_domains": [
+        "mtch.com",
+        "ir.mtch.com"
+      ],
+      "enabled": true,
+      "mandatory_monitoring": true,
+      "search_languages": [
+        "ru",
+        "en"
+      ],
+      "verification_status": "official_source_identified",
+      "evidence_urls": [
+        "https://mtch.com/about/",
+        "https://ir.mtch.com/investor-relations/overview/default.aspx"
+      ],
+      "checked_on": "2026-11-15",
+      "source_ids": [
+        "match_ir"
+      ],
+      "scope": "Новости группы, включая изменения её dating-продуктов; не путать с одиночным брендом Match"
+    },
+    {
+      "id": "pure",
+      "name": "PURE",
+      "tier": "golden_set",
+      "aliases": [
+        "PURE",
+        "Pure app",
+        "Пьюр"
+      ],
+      "official_domains": [
+        "pure.app",
+        "press.pure.app"
+      ],
+      "enabled": true,
+      "mandatory_monitoring": true,
+      "search_languages": [
+        "ru",
+        "en"
+      ],
+      "verification_status": "official_source_identified",
+      "evidence_urls": [
+        "https://press.pure.app/en/"
+      ],
+      "checked_on": "2026-11-15",
+      "source_ids": [
+        "pure_newsroom"
+      ],
+      "disambiguation_terms": {
+        "ru": [
+          "знакомства",
+          "приложение"
+        ],
+        "en": [
+          "dating",
+          "app"
+        ]
+      }
+    },
+    {
+      "id": "liangpei_ai",
+      "name": "Liangpei AI",
+      "tier": "golden_set",
+      "aliases": [
+        "Liangpei",
+        "Liangpei AI",
+        "良配"
+      ],
+      "official_domains": [],
+      "enabled": true,
+      "mandatory_monitoring": true,
+      "search_languages": [
+        "ru",
+        "en",
+        "zh"
+      ],
+      "verification_status": "official_domain_pending",
+      "evidence_urls": [
+        "https://eu.36kr.com/en/p/3915399664447107"
+      ],
+      "checked_on": "2026-11-15",
+      "source_ids": [
+        "36kr"
+      ],
+      "scope": "Обязательный поиск по названию и механикам, даже пока официальный домен не найден; совпадения китайского названия проверять по контексту",
+      "disambiguation_terms": {
+        "ru": [
+          "знакомства",
+          "AI"
+        ],
+        "en": [
+          "dating",
+          "matchmaking"
+        ],
+        "zh": [
+          "相亲",
+          "AI"
+        ]
+      }
+    },
+    {
+      "id": "world",
+      "name": "World / World ID",
+      "tier": "golden_set",
+      "aliases": [
+        "World ID",
+        "Worldcoin",
+        "Tools for Humanity"
+      ],
+      "official_domains": [
+        "world.org"
+      ],
+      "enabled": true,
+      "mandatory_monitoring": true,
+      "search_languages": [
+        "ru",
+        "en"
+      ],
+      "verification_status": "official_source_identified",
+      "evidence_urls": [
+        "https://dev.world.org/learncenter/case-studies/tinder"
+      ],
+      "checked_on": "2026-11-15",
+      "source_ids": [
+        "world_blog"
+      ],
+      "disambiguation_terms": {
+        "ru": [
+          "знакомства",
+          "Tinder",
+          "верификация"
+        ],
+        "en": [
+          "dating",
+          "Tinder",
+          "verification"
+        ]
+      },
+      "scope": "Только связь с dating, верификацией профилей и исследованиями знакомств; общие криптоновости не входят"
+    },
+    {
+      "id": "freddie",
+      "name": "Freddie / PurposeMed",
+      "tier": "golden_adjacent",
+      "aliases": [
+        "Freddie",
+        "PurposeMed"
+      ],
+      "official_domains": [],
+      "enabled": true,
+      "mandatory_monitoring": true,
+      "search_languages": [
+        "ru",
+        "en"
+      ],
+      "verification_status": "identified_in_partner_primary_source",
+      "evidence_urls": [
+        "https://investors.grindr.com/news/news-details/2026/Grindr-to-Acquire-Freddie-Expanding-Access-to-HIV-Prevention-for-Millions-of-Users/default.aspx"
+      ],
+      "checked_on": "2026-11-15",
+      "source_ids": [
+        "grindr_ir"
+      ],
+      "disambiguation_terms": {
+        "ru": [
+          "Grindr"
+        ],
+        "en": [
+          "Grindr"
+        ]
+      },
+      "scope": "Связанные с Grindr сделки и интеграции; не общий мониторинг медицины"
+    },
+    {
+      "id": "ithaca",
+      "name": "Ithaca Holdco / Ithaca Holdings",
+      "tier": "golden_adjacent",
+      "aliases": [
+        "Ithaca Holdco",
+        "Ithaca Holdings"
+      ],
+      "official_domains": [],
+      "enabled": true,
+      "mandatory_monitoring": true,
+      "search_languages": [
+        "ru",
+        "en"
+      ],
+      "verification_status": "identified_in_partner_primary_source",
+      "evidence_urls": [
+        "https://ir.bumble.com/news/news-details/2026/Bumble-Inc--to-Be-Acquired-by-Ithaca-Holdings-the-Long-Term-Holding-Company-for-Enduring-Technology-Businesses/default.aspx"
+      ],
+      "checked_on": "2026-11-15",
+      "source_ids": [
+        "bumble_ir"
+      ],
+      "disambiguation_terms": {
+        "ru": [
+          "Bumble"
+        ],
+        "en": [
+          "Bumble"
+        ]
+      },
+      "scope": "Только сделки и изменения вокруг Bumble/Badoo; не путать с другими одноимёнными компаниями"
+    },
+    {
+      "id": "harris_poll",
+      "name": "The Harris Poll",
+      "tier": "golden_adjacent",
+      "aliases": [
+        "Harris Poll",
+        "The Harris Poll"
+      ],
+      "official_domains": [
+        "theharrispoll.com"
+      ],
+      "enabled": true,
+      "mandatory_monitoring": true,
+      "search_languages": [
+        "ru",
+        "en"
+      ],
+      "verification_status": "official_source_identified",
+      "evidence_urls": [
+        "https://theharrispoll.com/articles/america-this-week-november-5-2026/"
+      ],
+      "checked_on": "2026-11-15",
+      "source_ids": [
+        "harris_poll"
+      ],
+      "disambiguation_terms": {
+        "ru": [
+          "знакомства",
+          "World"
+        ],
+        "en": [
+          "dating",
+          "World"
+        ]
+      },
+      "scope": "Исследования и маркетинг онлайн-знакомств"
+    },
+    {
+      "id": "mamba",
+      "name": "Мамба / Mamba",
+      "tier": "russia",
+      "aliases": [
+        "Мамба",
+        "Mamba"
+      ],
+      "official_domains": [
+        "mamba.group"
+      ],
+      "enabled": true,
+      "mandatory_monitoring": false,
+      "search_languages": [
+        "ru",
+        "en"
+      ],
+      "verification_status": "official_source_identified",
+      "evidence_urls": [
+        "https://mamba.group/"
+      ],
+      "checked_on": "2026-11-15",
+      "source_ids": [
+        "mamba_group"
+      ],
+      "disambiguation_terms": {
+        "ru": [
+          "знакомства"
+        ],
+        "en": [
+          "dating"
+        ]
+      }
+    },
+    {
+      "id": "twinby",
+      "name": "Twinby",
+      "tier": "russia",
+      "aliases": [
+        "Twinby",
+        "Твинби"
+      ],
+      "official_domains": [
+        "twinby.ru"
+      ],
+      "enabled": true,
+      "mandatory_monitoring": false,
+      "search_languages": [
+        "ru",
+        "en"
+      ],
+      "verification_status": "official_source_identified",
+      "evidence_urls": [
+        "https://twinby.ru/"
+      ],
+      "checked_on": "2026-11-15",
+      "source_ids": [
+        "twinby_site"
+      ]
+    },
+    {
+      "id": "vk_dating",
+      "name": "VK Знакомства",
+      "tier": "russia",
+      "aliases": [
+        "VK Знакомства",
+        "ВК Знакомства",
+        "VK Dating"
+      ],
+      "official_domains": [
+        "vk.company.ru"
+      ],
+      "enabled": true,
+      "mandatory_monitoring": false,
+      "search_languages": [
+        "ru",
+        "en"
+      ],
+      "verification_status": "official_source_identified",
+      "evidence_urls": [
+        "https://vk.company.ru/ru/press/releases/12489/"
+      ],
+      "checked_on": "2026-11-15",
+      "source_ids": [
+        "vk_press"
+      ],
+      "scope": "Корпоративный домен VK фильтровать по названию dating-продукта"
+    },
+    {
+      "id": "teamo",
+      "name": "Teamo",
+      "tier": "russia",
+      "aliases": [
+        "Teamo",
+        "Теамо"
+      ],
+      "official_domains": [
+        "teamo.ru"
+      ],
+      "enabled": true,
+      "mandatory_monitoring": false,
+      "search_languages": [
+        "ru",
+        "en"
+      ],
+      "verification_status": "official_source_identified",
+      "evidence_urls": [
+        "https://teamo.ru/"
+      ],
+      "checked_on": "2026-11-15",
+      "source_ids": [
+        "teamo_site"
+      ]
+    },
+    {
+      "id": "loveplanet",
+      "name": "LovePlanet",
+      "tier": "russia",
+      "aliases": [
+        "LovePlanet",
+        "ЛавПланет"
+      ],
+      "official_domains": [
+        "loveplanet.ru"
+      ],
+      "enabled": true,
+      "mandatory_monitoring": false,
+      "search_languages": [
+        "ru",
+        "en"
+      ],
+      "verification_status": "official_source_identified",
+      "evidence_urls": [
+        "https://loveplanet.ru/"
+      ],
+      "checked_on": "2026-11-15",
+      "source_ids": [
+        "loveplanet_site"
+      ],
+      "scope": "Использовать только новости/релизы; анкеты пользователей не собирать"
+    },
+    {
+      "id": "feeld",
+      "name": "Feeld",
+      "tier": "international",
+      "aliases": [
+        "Feeld",
+        "Филд"
+      ],
+      "official_domains": [
+        "feeld.co"
+      ],
+      "enabled": true,
+      "mandatory_monitoring": false,
+      "search_languages": [
+        "ru",
+        "en"
+      ],
+      "verification_status": "official_source_identified",
+      "evidence_urls": [
+        "https://feeld.co/"
+      ],
+      "checked_on": "2026-11-15",
+      "source_ids": [
+        "feeld_site"
+      ]
+    },
+    {
+      "id": "happn",
+      "name": "happn",
+      "tier": "international",
+      "aliases": [
+        "happn",
+        "Хаппн"
+      ],
+      "official_domains": [
+        "happn.com"
+      ],
+      "enabled": true,
+      "mandatory_monitoring": false,
+      "search_languages": [
+        "ru",
+        "en"
+      ],
+      "verification_status": "official_source_identified",
+      "evidence_urls": [
+        "https://www.happn.com/"
+      ],
+      "checked_on": "2026-11-15",
+      "source_ids": [
+        "happn_site"
+      ]
+    },
+    {
+      "id": "coffee_meets_bagel",
+      "name": "Coffee Meets Bagel",
+      "tier": "international",
+      "aliases": [
+        "Coffee Meets Bagel",
+        "CMB dating"
+      ],
+      "official_domains": [
+        "coffeemeetsbagel.com"
+      ],
+      "enabled": true,
+      "mandatory_monitoring": false,
+      "search_languages": [
+        "ru",
+        "en"
+      ],
+      "verification_status": "official_source_identified",
+      "evidence_urls": [
+        "https://www.coffeemeetsbagel.com/"
+      ],
+      "checked_on": "2026-11-15",
+      "source_ids": [
+        "cmb_site"
+      ]
+    },
+    {
+      "id": "pairs",
+      "name": "Pairs",
+      "tier": "international",
+      "aliases": [
+        "Pairs",
+        "ペアーズ"
+      ],
+      "official_domains": [
+        "pairs.lv"
+      ],
+      "enabled": true,
+      "mandatory_monitoring": false,
+      "search_languages": [
+        "ru",
+        "en"
+      ],
+      "verification_status": "official_source_identified",
+      "evidence_urls": [
+        "https://www.pairs.lv/"
+      ],
+      "checked_on": "2026-11-15",
+      "source_ids": [
+        "pairs_site"
+      ],
+      "disambiguation_terms": {
+        "ru": [
+          "знакомства",
+          "Япония"
+        ],
+        "en": [
+          "dating",
+          "Japan"
+        ]
+      }
+    },
+    {
+      "id": "tapple",
+      "name": "tapple",
+      "tier": "international",
+      "aliases": [
+        "tapple",
+        "タップル"
+      ],
+      "official_domains": [
+        "tapple.me"
+      ],
+      "enabled": true,
+      "mandatory_monitoring": false,
+      "search_languages": [
+        "ru",
+        "en"
+      ],
+      "verification_status": "official_source_identified",
+      "evidence_urls": [
+        "https://tapple.me/"
+      ],
+      "checked_on": "2026-11-15",
+      "source_ids": [
+        "tapple_site"
+      ]
+    },
+    {
+      "id": "hily",
+      "name": "Hily",
+      "tier": "international",
+      "aliases": [
+        "Hily",
+        "Хайли"
+      ],
+      "official_domains": [
+        "hily.com"
+      ],
+      "enabled": true,
+      "mandatory_monitoring": false,
+      "search_languages": [
+        "ru",
+        "en"
+      ],
+      "verification_status": "official_source_identified",
+      "evidence_urls": [
+        "https://hily.com/"
+      ],
+      "checked_on": "2026-11-15",
+      "source_ids": [
+        "hily_site"
+      ]
+    },
+    {
+      "id": "boo",
+      "name": "Boo",
+      "tier": "international",
+      "aliases": [
+        "Boo"
+      ],
+      "official_domains": [
+        "boo.world"
+      ],
+      "enabled": true,
+      "mandatory_monitoring": false,
+      "search_languages": [
+        "ru",
+        "en"
+      ],
+      "verification_status": "official_source_identified",
+      "evidence_urls": [
+        "https://boo.world/"
+      ],
+      "checked_on": "2026-11-15",
+      "source_ids": [
+        "boo_site"
+      ],
+      "disambiguation_terms": {
+        "ru": [
+          "знакомства",
+          "приложение"
+        ],
+        "en": [
+          "dating",
+          "app"
+        ]
+      }
+    },
+    {
+      "id": "breeze",
+      "name": "Breeze",
+      "tier": "mechanism_watch",
+      "aliases": [
+        "Breeze"
+      ],
+      "official_domains": [
+        "breeze.social"
+      ],
+      "enabled": true,
+      "mandatory_monitoring": false,
+      "search_languages": [
+        "ru",
+        "en"
+      ],
+      "verification_status": "official_source_identified",
+      "evidence_urls": [
+        "https://www.breeze.social/faq"
+      ],
+      "checked_on": "2026-11-15",
+      "source_ids": [
+        "breeze_faq"
+      ],
+      "disambiguation_terms": {
+        "ru": [
+          "знакомства",
+          "свидание"
+        ],
+        "en": [
+          "dating",
+          "date"
+        ]
+      },
+      "watch_reason": "Оплата за свидание, организация офлайн-встреч и партнёрства с заведениями; не утверждение о новом запуске"
+    },
+    {
+      "id": "thursday",
+      "name": "Thursday",
+      "tier": "mechanism_watch",
+      "aliases": [
+        "Thursday",
+        "Thursday dating"
+      ],
+      "official_domains": [
+        "thursday.com"
+      ],
+      "enabled": true,
+      "mandatory_monitoring": false,
+      "search_languages": [
+        "ru",
+        "en"
+      ],
+      "verification_status": "official_source_identified",
+      "evidence_urls": [
+        "https://www.getthursday.com/"
+      ],
+      "checked_on": "2026-11-15",
+      "source_ids": [
+        "thursday_site"
+      ],
+      "disambiguation_terms": {
+        "ru": [
+          "знакомства",
+          "синглы"
+        ],
+        "en": [
+          "dating",
+          "singles"
+        ]
+      },
+      "watch_reason": "Офлайн-события и билеты; не утверждение о новизне сервиса"
+    },
+    {
+      "id": "sitch",
+      "name": "Sitch",
+      "tier": "mechanism_watch",
+      "aliases": [
+        "Sitch"
+      ],
+      "official_domains": [
+        "content.sitch.net"
+      ],
+      "enabled": true,
+      "mandatory_monitoring": false,
+      "search_languages": [
+        "ru",
+        "en"
+      ],
+      "verification_status": "official_terms_identified_main_site_unavailable",
+      "evidence_urls": [
+        "https://content.sitch.net/terms-of-use"
+      ],
+      "checked_on": "2026-11-15",
+      "source_ids": [
+        "sitch_terms"
+      ],
+      "disambiguation_terms": {
+        "ru": [
+          "знакомства",
+          "AI"
+        ],
+        "en": [
+          "dating",
+          "matchmaking"
+        ]
+      },
+      "watch_reason": "AI-подбор и онбординг; проверять актуальную механику по первоисточникам"
+    }
+  ],
+  "collection_policy": {
+    "required_companies": "Искать в каждом запуске и сохранять все найденные материалы в выбранном периоде до редакционного отбора, включая не попавшие в top-10",
+    "golden_adjacent": "Искать обязательно, но только в прямой связи с dating-контекстом из примеров",
+    "missing_official_domain": "Продолжать обязательный поиск по названию и медиа; отсутствие домена не отключает компанию",
+    "storage": "Сохранять article JSON и причину последующего отклонения; неполный/недоступный текст помечать, не выдумывать",
+    "coverage": "Для каждой обязательной компании фиксировать выполненные запросы, число материалов и ошибки; ноль результатов отличается от невыполненного поиска"
+  },
+  "coverage_gaps": [
+    "Каталог открыт для добавлений; он не гарантирует полного покрытия рынка",
+    "Для Liangpei и Freddie не установлен собственный официальный домен",
+    "Актуальность отдельных механизмов проверяется при сборе, а не предполагается по описанию каталога"
+  ]
 }

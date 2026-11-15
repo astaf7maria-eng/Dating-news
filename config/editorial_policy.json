@@ -1,7 +1,9 @@
 {
-  "version": "0.3",
+  "version": "0.4",
   "status": "scope_confirmed_rubric_pending_calibration",
   "max_news_total": 10,
+  "collection_limit": "Не ограничивать сбор десяткой: обязательные компании и golden set ищутся и сохраняются до рейтинга. Ограничение 10 применяется только к выпуску.",
+  "golden_set": "config/golden_set.json",
   "selection": "global_top_then_group_by_primary_section",
   "quotas_per_section": null,
   "empty_section_text": "За выбранный период значимых новостей нет.",

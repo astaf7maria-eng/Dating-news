@@ -1,21 +1,517 @@
 {
-  "version": "0.2",
-  "status": "seed_terms_require_calibration",
-  "languages": ["ru", "en"],
-  "product_signals": {
-    "ru": ["запустил", "запустила", "новая функция", "новый сервис", "тестирует", "пилот", "обновление"],
-    "en": ["launch", "new feature", "rollout", "introduces", "pilot", "beta", "product update"]
-  },
-  "query_templates": ["{company_alias} {product_signal}", "site:{official_domain} {product_signal}"],
+  "version": "0.4",
+  "status": "query_catalog_v1",
+  "languages": [
+    "ru",
+    "en"
+  ],
   "category_signals": {
-    "monetization": {"ru": ["тариф", "подписка", "цена", "комиссия", "платный пакет"], "en": ["pricing", "subscription", "paid tier", "premium", "fee"]},
-    "trust_safety": {"ru": ["верификация", "проверка документов", "антифрод", "мошенничество", "харассмент", "депозит", "гарантия", "страхование"], "en": ["verification", "identity check", "fraud", "scam", "harassment", "deposit", "guarantee", "insurance"]},
-    "ai": {"ru": ["AI", "ИИ", "ассистент", "подбор", "скоринг", "модерация"], "en": ["AI", "assistant", "matching", "scoring", "moderation", "agent"]},
-    "new_models": {"ru": ["стартап", "новая модель", "пилот", "раунд"], "en": ["startup", "new model", "pilot", "funding"]},
-    "business": {"ru": ["финансовые результаты", "выручка", "сделка", "поглощение", "назначение"], "en": ["earnings", "revenue", "acquisition", "merger", "appoints"]},
-    "marketing": {"ru": ["кампания", "реклама", "продвижение", "опрос"], "en": ["campaign", "advertising", "brand", "survey", "promotion"]}
+    "features": {
+      "ru": [
+        "новая функция",
+        "запуск",
+        "тест",
+        "раскатка",
+        "новый рынок",
+        "обновление"
+      ],
+      "en": [
+        "new feature",
+        "launch",
+        "pilot",
+        "rollout",
+        "market expansion",
+        "product update"
+      ]
+    },
+    "monetization": {
+      "ru": [
+        "подписка",
+        "тариф",
+        "цена",
+        "платный пакет",
+        "комиссия",
+        "премиум"
+      ],
+      "en": [
+        "subscription",
+        "pricing",
+        "paid tier",
+        "package",
+        "fee",
+        "premium"
+      ]
+    },
+    "trust_safety": {
+      "ru": [
+        "верификация",
+        "проверка документов",
+        "проверка лица",
+        "антифрод",
+        "мошенничество",
+        "харассмент",
+        "депозит",
+        "гарантия",
+        "страхование"
+      ],
+      "en": [
+        "verification",
+        "identity check",
+        "face verification",
+        "fraud",
+        "scam",
+        "harassment",
+        "deposit",
+        "guarantee",
+        "insurance"
+      ]
+    },
+    "ai": {
+      "ru": [
+        "AI",
+        "ИИ",
+        "ассистент",
+        "автозаполнение",
+        "подбор",
+        "скоринг",
+        "модерация",
+        "AI-агенты"
+      ],
+      "en": [
+        "AI",
+        "assistant",
+        "profile completion",
+        "matching",
+        "scoring",
+        "moderation",
+        "AI agents"
+      ]
+    },
+    "new_models": {
+      "ru": [
+        "новая модель",
+        "новое приложение",
+        "стартап",
+        "пилот",
+        "раунд",
+        "гарантия возврата"
+      ],
+      "en": [
+        "business model",
+        "new dating app",
+        "startup",
+        "pilot",
+        "funding",
+        "money-back guarantee"
+      ]
+    },
+    "business": {
+      "ru": [
+        "финансовые результаты",
+        "выручка",
+        "платящие",
+        "сделка",
+        "поглощение",
+        "назначение",
+        "партнёрство"
+      ],
+      "en": [
+        "earnings",
+        "revenue",
+        "paying users",
+        "acquisition",
+        "merger",
+        "appoints",
+        "partnership"
+      ]
+    },
+    "marketing": {
+      "ru": [
+        "кампания",
+        "реклама",
+        "продвижение",
+        "опрос",
+        "бренд",
+        "исследование"
+      ],
+      "en": [
+        "campaign",
+        "advertising",
+        "promotion",
+        "survey",
+        "brand",
+        "research"
+      ]
+    }
   },
-  "category_query_template": "{company_alias} {category_signal}",
-  "soft_negative_signals": ["гороскоп", "советы для первого свидания", "dating tips", "celebrity gossip"],
-  "notes": "Финансы и маркетинг — разрешённые категории. Словарь стартовый; поисковые даты лишь сужают поиск, точное окно проверяется по статье."
+  "company_profiles": {
+    "always": {
+      "thematic_sections": [
+        "features",
+        "monetization",
+        "trust_safety",
+        "ai",
+        "new_models",
+        "business",
+        "marketing"
+      ]
+    },
+    "golden_set": {
+      "thematic_sections": [
+        "features",
+        "monetization",
+        "trust_safety",
+        "ai",
+        "new_models",
+        "business",
+        "marketing"
+      ]
+    },
+    "golden_adjacent": {
+      "thematic_sections": []
+    },
+    "russia": {
+      "thematic_sections": [
+        "features",
+        "monetization",
+        "trust_safety",
+        "ai",
+        "new_models",
+        "business",
+        "marketing"
+      ]
+    },
+    "international": {
+      "thematic_sections": []
+    },
+    "mechanism_watch": {
+      "thematic_sections": [
+        "new_models",
+        "monetization",
+        "ai"
+      ]
+    }
+  },
+  "company_query_policy": {
+    "baseline": "Название/алиасы без продуктового фильтра: ловит финансы, назначения и маркетинг",
+    "themes": "Дополнительные запросы по семи категориям для обязательных и российских компаний",
+    "disambiguation": "Для PURE, World, Pairs, Boo и других неоднозначных названий добавлять dating-контекст; не искать World без World ID/квалификаторов",
+    "all_aliases_in_baseline": true
+  },
+  "discovery": {
+    "enabled": true,
+    "independent_of_company_list": true,
+    "context": {
+      "ru": [
+        "приложение знакомств",
+        "сервис знакомств",
+        "дейтинг",
+        "матчмейкинг"
+      ],
+      "en": [
+        "dating app",
+        "dating startup",
+        "matchmaking app"
+      ]
+    },
+    "novelty_signals": {
+      "ru": [
+        "запуск",
+        "новый",
+        "пилот",
+        "тест",
+        "инвестиции",
+        "раунд"
+      ],
+      "en": [
+        "launch",
+        "new",
+        "pilot",
+        "beta",
+        "funding",
+        "seed"
+      ]
+    },
+    "business_model_patterns": [
+      {
+        "id": "pay_per_date",
+        "title": "Оплата за состоявшееся свидание",
+        "phrases": {
+          "ru": [
+            "оплата за свидание",
+            "плата за встречу"
+          ],
+          "en": [
+            "pay per date",
+            "pay-per-date"
+          ]
+        }
+      },
+      {
+        "id": "outcome_guarantee",
+        "title": "Оплата за результат и гарантия возврата",
+        "phrases": {
+          "ru": [
+            "гарантия брака",
+            "возврат денег",
+            "оплата за результат"
+          ],
+          "en": [
+            "marriage guarantee",
+            "money-back guarantee",
+            "success fee"
+          ]
+        }
+      },
+      {
+        "id": "deposit_commitment",
+        "title": "Депозиты и защита от неявок",
+        "phrases": {
+          "ru": [
+            "депозит",
+            "штраф за неявку",
+            "бронь свидания"
+          ],
+          "en": [
+            "deposit",
+            "no-show fee",
+            "commitment fee"
+          ]
+        }
+      },
+      {
+        "id": "curated_one_match",
+        "title": "Один кандидат и ограниченный подбор",
+        "phrases": {
+          "ru": [
+            "один кандидат",
+            "один матч",
+            "без свайпов"
+          ],
+          "en": [
+            "one match at a time",
+            "curated matching",
+            "swipe-free"
+          ]
+        }
+      },
+      {
+        "id": "ai_human_matchmaker",
+        "title": "AI плюс человек-сваха",
+        "phrases": {
+          "ru": [
+            "AI-сваха",
+            "AI-интервью",
+            "AI-подбор"
+          ],
+          "en": [
+            "AI matchmaker",
+            "AI interview",
+            "human matchmaking"
+          ]
+        }
+      },
+      {
+        "id": "friends_groups",
+        "title": "Друзья и групповые знакомства",
+        "phrases": {
+          "ru": [
+            "друзья подбирают пару",
+            "групповые знакомства",
+            "двойное свидание"
+          ],
+          "en": [
+            "friend matchmaking",
+            "group dating",
+            "double date"
+          ]
+        }
+      },
+      {
+        "id": "offline_venues",
+        "title": "Офлайн-встречи и партнёрства с заведениями",
+        "phrases": {
+          "ru": [
+            "офлайн-свидания",
+            "знакомства в барах",
+            "билеты на знакомства"
+          ],
+          "en": [
+            "offline dating",
+            "singles events",
+            "venue partnership"
+          ]
+        }
+      },
+      {
+        "id": "verified_single",
+        "title": "Проверка личности и семейного статуса",
+        "phrases": {
+          "ru": [
+            "проверка семейного положения",
+            "подтверждение личности",
+            "проверка холост"
+          ],
+          "en": [
+            "single status verification",
+            "identity-verified dating",
+            "proof of personhood"
+          ]
+        }
+      },
+      {
+        "id": "women_pricing",
+        "title": "Сегментные тарифы и правила контакта",
+        "phrases": {
+          "ru": [
+            "женская подписка",
+            "платный первый контакт",
+            "тариф для женщин"
+          ],
+          "en": [
+            "women subscription",
+            "pay to message",
+            "gender-based pricing"
+          ]
+        }
+      },
+      {
+        "id": "community_niche",
+        "title": "Нишевые сообщества и приглашения",
+        "phrases": {
+          "ru": [
+            "нишевые знакомства",
+            "по приглашениям",
+            "клуб знакомств"
+          ],
+          "en": [
+            "niche dating",
+            "invite-only dating",
+            "dating community"
+          ]
+        }
+      },
+      {
+        "id": "video_voice",
+        "title": "Голосовые и видеоформаты",
+        "phrases": {
+          "ru": [
+            "голосовые знакомства",
+            "видеосвидание",
+            "анонимные знакомства"
+          ],
+          "en": [
+            "voice-first dating",
+            "video dating",
+            "anonymous dating"
+          ]
+        }
+      },
+      {
+        "id": "b2b2c",
+        "title": "Партнёрская и субсидируемая модель",
+        "phrases": {
+          "ru": [
+            "знакомства для сотрудников",
+            "субсидируемые знакомства",
+            "корпоративные знакомства"
+          ],
+          "en": [
+            "employer dating benefit",
+            "subsidized dating",
+            "B2B matchmaking"
+          ]
+        }
+      },
+      {
+        "id": "marketplace_services",
+        "title": "Сервисы вокруг свиданий",
+        "phrases": {
+          "ru": [
+            "маркетплейс свиданий",
+            "партнёрство с рестораном",
+            "консьерж свиданий"
+          ],
+          "en": [
+            "dating concierge",
+            "date marketplace",
+            "restaurant partnership"
+          ]
+        }
+      },
+      {
+        "id": "nonprofit_public",
+        "title": "Государственные и некоммерческие модели",
+        "phrases": {
+          "ru": [
+            "государственный сервис знакомств",
+            "некоммерческие знакомства"
+          ],
+          "en": [
+            "government dating app",
+            "nonprofit dating app"
+          ]
+        }
+      }
+    ],
+    "native_language_queries": [
+      {
+        "id": "china_new_models",
+        "language": "zh",
+        "query": "(\"相亲\" OR \"婚恋\") (\"AI\" OR \"退款\" OR \"商业模式\") (\"上线\" OR \"融资\")",
+        "rationale": "Китайские запуски, AI и возврат денег"
+      },
+      {
+        "id": "japan_new_models",
+        "language": "ja",
+        "query": "(\"マッチングアプリ\" OR \"婚活\") (\"新機能\" OR \"開始\" OR \"料金\")",
+        "rationale": "Японские функции, запуски и цены"
+      }
+    ],
+    "source_seed_ids": [
+      "gdi",
+      "dating_industry_insights",
+      "techcrunch",
+      "36kr"
+    ],
+    "candidate_promotion": "Сохранить новый бренд и доказательства механики в discovery_candidates; не добавлять в обязательный список молча",
+    "candidate_fields": [
+      "name",
+      "aliases",
+      "official_url_or_pending",
+      "first_seen_at",
+      "source_urls",
+      "mechanism",
+      "novelty_evidence",
+      "launch_stage",
+      "markets",
+      "why_relevant",
+      "verification_status"
+    ],
+    "risk_queries": [
+      {
+        "id": "malware_ru",
+        "language": "ru",
+        "query": "(\"сайт знакомств\" OR \"приложение знакомств\") (\"мошенники\" OR \"вредонос\" OR \"APK\" OR \"установить приложение\")"
+      },
+      {
+        "id": "malware_en",
+        "language": "en",
+        "query": "(\"dating app\" OR \"romance scam\") (\"malware\" OR \"APK\" OR \"app installation\" OR \"fraud warning\")"
+      }
+    ]
+  },
+  "retrieval_policy": {
+    "window": "Из подтверждённого manifest; параметры дат добавляет адаптер поискового провайдера, не жёсткая строка запроса",
+    "mandatory_coverage": "Нельзя урезать обязательные компании при лимите бюджета молча; статус coverage_incomplete и список пропущенных запросов",
+    "source_lookup": "Проверенные official_* и IR источники получают отдельный site-запрос; общие анкеты/чаты не собирать",
+    "soft_negative_signals": [
+      "гороскоп",
+      "dating tips",
+      "celebrity gossip"
+    ],
+    "negative_filter_mode": "Мягкие сигналы для оценки шума; не добавлять глобальные минус-слова, отсекающие кампании и финансы",
+    "collection_before_ranking": true
+  },
+  "notes": "Это план запросов, не работающий сборщик. Полнота проверяется на golden_set; затем возможны адаптация синтаксиса и бюджетов под поисковый API."
 }
