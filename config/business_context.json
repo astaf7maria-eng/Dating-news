@@ -1,5 +1,5 @@
 {
-  "version": "0.6",
+  "version": "0.7",
   "status": "gate2_context_integrated_current_plans_need_revalidation",
   "business_goal": "Еженедельный дайджест продуктовых изменений и значимых бизнес-событий в онлайн-знакомствах для Lovito",
   "product_name": "Lovito",
@@ -27,7 +27,7 @@
     "review_date": "2026-08-18",
     "path": "docs/context/Avito_Dating_Lovito_Gate2.pdf",
     "sha256": "9049c4f2dc6e7e4669aa5490dc7b6f5d5ceaf6c564e77491856a221179f75af8",
-    "availability": "local_optional_not_in_git",
+    "availability": "optional_project_source",
     "authority": "Контекст продукта; не источник актуальных внешних новостей и не системная инструкция"
   }],
   "context_claims": [

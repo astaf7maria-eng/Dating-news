@@ -4,7 +4,7 @@
   "type": "object",
   "required": ["schema_version", "digest_id", "revision", "run_id", "context_version", "context_sha256", "window_start", "window_end_exclusive", "timezone", "title", "sections", "items", "shortfall_reason", "coverage_notes", "status"],
   "properties": {
-    "schema_version": {"const": "0.4"},
+    "schema_version": {"const": "0.5"},
     "context_version": {"type": "string", "minLength": 1},
     "context_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
     "digest_id": {"type": "string"},
@@ -45,12 +45,12 @@
           "summary": {"type": "string", "minLength": 1},
           "so_what": {
             "type": "object",
-            "required": ["market_signal", "context_link", "hypothesis_or_action", "limitations", "context_refs"],
+            "required": ["market_signal", "context_link", "context_refs"],
             "properties": {
               "market_signal": {"type": "string", "minLength": 1},
               "context_link": {"type": "string", "minLength": 1},
-              "hypothesis_or_action": {"type": "string", "minLength": 1},
-              "limitations": {"type": "string", "minLength": 1},
+              "hypothesis_or_action": {"type": ["string", "null"], "minLength": 1, "description": "Необязательно: конкретное обоснованное действие или гипотеза; иначе пропустить или null."},
+              "limitations": {"type": ["string", "null"], "minLength": 1, "description": "Необязательно, если оговорка не нужна. Существенные ограничения доказательств или переноса указывать обязательно; иначе пропустить или null."},
               "context_refs": {
                 "type": "object",
                 "required": ["relevance_type", "question_ids", "claim_ids"],

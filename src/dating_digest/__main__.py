@@ -71,6 +71,20 @@ def validate_configs(configs: dict, schema_dir: Path = Path("schemas")) -> None:
     for profile in rules["company_profiles"].values():
         references(profile["thematic_sections"], rules["category_signals"], "query section")
     references(rules["discovery"]["source_seed_ids"], sources, "discovery seed")
+    source_policy = configs["sources"].get("source_policy", {})
+    media_ids = source_policy.get("key_media_ids", [])
+    references(media_ids, sources, "key media")
+    if len(media_ids) != len(set(media_ids)):
+        raise ValueError("Duplicate key media references")
+    for source_id in media_ids:
+        source = sources[source_id]
+        if not source["enabled"] or source["kind"] not in {"industry_media", "general_media"}:
+            raise ValueError(f"Key media must be enabled media: {source_id}")
+        language = source["language"]
+        keywords = source_policy.get("media_keywords", {}).get(language)
+        if (language not in rules["discovery"]["context"] or not isinstance(keywords, list)
+                or not keywords or any(not isinstance(word, str) or not word.strip() for word in keywords)):
+            raise ValueError(f"Missing key media keywords or dating context: {source_id}")
     if "editorial_policy" not in configs:  # Legacy plans only supplied the catalog.
         return
     policy = configs["editorial_policy"]
@@ -138,7 +152,9 @@ def main() -> None:
             write_json(args.run_dir / "search_plan.json", result)
         except (OSError, ValueError, KeyError, TypeError) as exc:
             parser.error(str(exc))
-        print(f"Saved {result['query_count']} planned queries; no search has run.")
+        print(f"Saved {result['query_count']} coverage queries in {result['task_count']} search tasks "
+              f"({result['language_request_count']} separate language requests before provider optimization); "
+              "no search has run.")
         if result["catalog_origin"] == "live_legacy":
             print("Legacy run uses the current catalog. Create a new run to freeze all inputs.")
         if bundle is None:

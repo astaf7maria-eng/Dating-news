@@ -57,6 +57,8 @@ site:hinge.co ("Hinge" OR "Хиндж")
 
 ## Источники и ограничения проверки
 
+Приоритет и правила доказательств заданы в source_policy файла sources.json. Сначала проверяются официальные страницы компаний для медиа и инвесторов, затем остальные официальные материалы. После этого обязательно выполняется поиск по ключевым словам в TechCrunch, Global Dating Insights, Dating Industry Insights, 36Kr и «Ведомостях», далее широкий поиск. Перечень СМИ и RU/EN ключевые слова настраиваются в конфиге. Официальное сообщение приоритетно для точных условий, цен, стадии, даты и финансовых показателей; независимый контекст нужен по смыслу. Заявления об эффективности атрибутируются компании, перепечатки не считаются независимой проверкой. При отсутствии официального материала продолжается поиск в СМИ с фиксацией пробела; для внешних рисков подходит первичное сообщение органа или исследователя. Существенные противоречия требуют разбора.
+
 Реестр содержит 34 записи. Официальные точки входа: [Tinder Newsroom](https://www.tinderpressroom.com/), [Hinge Newsroom](https://hinge.co/newsroom), [Match IR](https://ir.mtch.com/investor-relations/overview/default.aspx), [Bumble IR](https://ir.bumble.com/overview/default.aspx), [Grindr News](https://investors.grindr.com/news/default.aspx), [PURE Newsroom](https://press.pure.app/en/), [Mamba Group](https://mamba.group/), [VK пресс-релизы](https://vk.company.ru/ru/press/releases/).
 
 Discovery-источники: [Global Dating Insights](https://www.globaldatinginsights.com/), [Dating Industry Insights](https://www.datingindustryinsights.com/), TechCrunch и 36Kr. [Отраслевой каталог стартапов](https://www.datingindustryinsights.com/directory/startups) даёт дополнительные leads, а не заменяет первоисточники.

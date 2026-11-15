@@ -1,6 +1,6 @@
 # Отбор и рейтинг
 
-Использовать с common.md. Вход: события и подтверждающие статьи, история выпусков, manifest, context_bundle, снимки editorial_policy/pipeline.
+Использовать с common.md. Вход: события и подтверждающие статьи, история выпусков, manifest, context_bundle, снимки editorial_policy/pipeline и source_policy из снимка sources.json.
 
 1. Проверить допуск по политике и свежести; объединить дубли, сохранив существенные новые стадии/рынки. Неизвестное пометить needs_review. Финансы и маркетинг не требуют продуктового запуска; малые компании требуют новой механики; внешний риск не выдавать за функцию.
 2. Для каждого оценённого события заполнить context_assessment: relevance_type, question_ids, claim_ids, rationale, application_horizon. Горизонт — применимость идеи, не текущая стадия Lovito. Совпадение слов не доказывает связь; market_watch допустим вне roadmap.
