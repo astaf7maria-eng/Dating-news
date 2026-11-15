@@ -37,7 +37,7 @@ def build_context_bundle(context: dict) -> dict:
     if not context.get("version"):
         raise ValueError("Missing business context version")
     policy = context["context_policy"]
-    if (policy["mode"] != "advisory" or policy["search_mode"] != "additive"
+    if (policy["mode"] != "advisory"
             or policy["allow_market_watch"] is not True
             or policy["no_topic_or_geography_quota"] is not True):
         raise ValueError("Context must preserve broad coverage and advisory relevance")
@@ -61,8 +61,6 @@ def build_context_bundle(context: dict) -> dict:
             raise ValueError(f"Missing decision question or evidence: {question['id']}")
         if not set(question["claim_ids"]) <= claims.keys():
             raise ValueError(f"Unknown claim in decision question: {question['id']}")
-        if any(not question["search_queries"].get(lang, "").strip() for lang in ("ru", "en")):
-            raise ValueError(f"Missing RU/EN context query: {question['id']}")
     return {
         "schema_version": "1.0",
         "context_version": context["version"],

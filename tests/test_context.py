@@ -1,4 +1,4 @@
-"""Context must add coverage, preserve historical status, and stay frozen per run."""
+"""User context stays fixed for so what and never changes search coverage."""
 
 import copy
 import json
@@ -44,7 +44,7 @@ class ContextTests(unittest.TestCase):
             lambda c: c["decision_questions"][0]["claim_ids"].append("invented"),
             lambda c: c["context_claims"][0].update(status="launched"),
             lambda c: c["context_claims"][0].update(pages=[]),
-            lambda c: c["context_policy"].update(search_mode="exclusive"),
+            lambda c: c["context_policy"].update(no_topic_or_geography_quota=False),
             lambda c: c["decision_questions"].append(copy.deepcopy(c["decision_questions"][0])),
         ):
             context = copy.deepcopy(self.context)
@@ -80,7 +80,7 @@ class ContextTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "manifest"):
             build_plan(catalog, sources, rules, manifest, self.bundle)
 
-    def test_additive_queries_preserve_every_original_query_and_period(self):
+    def test_context_is_saved_for_so_what_without_changing_search(self):
         config = ROOT / "config"
         catalog, sources, rules = [read(config / f"{name}.json") for name in ("companies", "sources", "queries")]
         manifest = {
@@ -90,14 +90,33 @@ class ContextTests(unittest.TestCase):
         }
         baseline = build_plan(catalog, sources, rules, manifest)
         plan = build_plan(catalog, sources, rules, manifest, self.bundle)
-        self.assertEqual(baseline["queries"], [q for q in plan["queries"] if q["lane"] != "context"])
+        self.assertEqual(baseline["queries"], plan["queries"])
+        self.assertEqual(baseline["search_tasks"], plan["search_tasks"])
         self.assertEqual(baseline["coverage"], plan["coverage"])
         self.assertEqual(plan["window_start"], manifest["window_start"])
         self.assertEqual(plan["window_end_exclusive"], manifest["window_end_exclusive"])
-        for question in self.context["decision_questions"]:
-            queries = [q for q in plan["queries"] if q["decision_id"] == question["id"]]
-            self.assertEqual({q["language"] for q in queries}, {"ru", "en"})
-            self.assertTrue(all(q["status"] == "planned" for q in queries))
+        self.assertFalse(any(q["lane"] == "context" or q["decision_id"] is not None for q in plan["queries"]))
+        self.assertNotIn("business_context", plan["config_snapshot"])
+        self.assertNotIn("context_warnings", plan)
+        self.assertEqual(plan["context_sha256"], self.bundle["context_sha256"])
+        self.assertEqual(plan["business_context_usage"], "so_what_only_no_revalidation")
+
+    def test_unused_context_search_fields_do_not_change_requests(self):
+        config = ROOT / "config"
+        catalog, sources, rules = [read(config / f"{name}.json") for name in ("companies", "sources", "queries")]
+        manifest = {
+            "run_id": "fixed-context", "window_start": "2026-11-01T00:00:00+03:00",
+            "window_end_exclusive": "2026-11-15T00:00:00+03:00",
+            "window_confirmation": {"status": "confirmed"},
+        }
+        before = build_plan(catalog, sources, rules, manifest, self.bundle)
+        context = copy.deepcopy(self.context)
+        context["context_policy"].pop("search_mode")
+        for question in context["decision_questions"]:
+            question.pop("search_queries")
+        after = build_plan(catalog, sources, rules, manifest, build_context_bundle(context))
+        self.assertEqual(before["queries"], after["queries"])
+        self.assertEqual(before["search_tasks"], after["search_tasks"])
 
 
 class ContextCliTests(unittest.TestCase):

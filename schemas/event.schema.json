@@ -4,7 +4,7 @@
   "type": "object",
   "required": ["schema_version", "event_id", "company_ids", "headline", "section_id", "event_kind", "launch_stage", "markets", "article_ids", "facts", "eligibility", "ranking", "context_assessment"],
   "properties": {
-    "schema_version": {"const": "0.3"},
+    "schema_version": {"const": "0.4"},
     "event_id": {"type": "string", "minLength": 1},
     "company_ids": {"type": "array", "minItems": 1, "items": {"type": "string"}},
     "headline": {"type": "string", "minLength": 1},
@@ -36,7 +36,7 @@
     },
     "ranking": {
       "type": ["object", "null"],
-      "required": ["criteria", "total_score", "context_version", "context_sha256"],
+      "required": ["criteria", "total_score"],
       "properties": {
         "criteria": {
           "type": "array",
@@ -71,12 +71,5 @@
       }]
     }
   },
-  "allOf": [{
-    "if": {"properties": {"ranking": {"type": "object"}}, "required": ["ranking"]},
-    "then": {"properties": {"context_assessment": {"type": "object"}}}
-  }, {
-    "if": {"properties": {"eligibility": {"properties": {"status": {"const": "included"}}, "required": ["status"]}}, "required": ["eligibility"]},
-    "then": {"properties": {"context_assessment": {"type": "object"}}}
-  }],
-  "$comment": "Для оценённого/отобранного события context_assessment не null. ID и отпечаток проверять по context_bundle.json запуска. decision_support требует непустого question_ids; market_watch допускает пустые ID с конкретным обоснованием значимости. Контекст не является фильтром допуска."
+  "$comment": "Контекст Lovito используется только для so what после отбора. При отборе context_assessment = null; оценки и допуск от него не зависят. Поля context_assessment и контекстные метаданные ranking сохранены для чтения прежних артефактов. В новом выпуске context_refs формируются непосредственно из context_bundle.json; decision_support требует непустого question_ids, market_watch допускает пустые ID при конкретном обосновании значимости."
 }

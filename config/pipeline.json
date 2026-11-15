@@ -1,5 +1,5 @@
 {
-  "version": "0.4",
+  "version": "0.5",
   "timezone": "Europe/Moscow",
   "schedule": null,
   "window": {
@@ -30,7 +30,7 @@
     "request_timeout_seconds": 30
   },
   "ranking": {
-    "status": "provisional_until_context_calibration",
+    "status": "provisional_until_editorial_calibration",
     "scale": "0_to_5",
     "weights": {
       "business_relevance": 0.35,

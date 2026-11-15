@@ -111,9 +111,6 @@ def build_plan(catalog: dict, sources: dict, rules: dict, manifest: dict,
         if saved_context and (saved_context.get("sha256") != context_bundle["context_sha256"]
                               or saved_context.get("version") != context_bundle["context_version"]):
             raise ValueError("Context bundle does not match run manifest")
-        for question in context_bundle["business_context"]["decision_questions"]:
-            for language, query in question["search_queries"].items():
-                add("context", language, "decision_support", query, decision_id=question["id"])
 
     # Official media/IR pages first, other official pages next, then key media.
     # Broad search stays mandatory and can find facts absent from company PR.
@@ -141,9 +138,10 @@ def build_plan(catalog: dict, sources: dict, rules: dict, manifest: dict,
         task["language_variants"].setdefault(query["language"], []).append(query["query_id"])
 
     result = {
-        "schema_version": "0.8", "run_id": manifest["run_id"],
+        "schema_version": "0.9", "run_id": manifest["run_id"],
         "window_start": start.isoformat(), "window_end_exclusive": end.isoformat(),
         "timezone": "Europe/Moscow", "status": "planned_not_executed",
+        "business_context_usage": "so_what_only_no_revalidation",
         "config_versions": {"companies": catalog["version"], "sources": sources["version"], "queries": rules["version"]},
         "config_snapshot": {"companies": catalog, "sources": sources, "queries": rules},
         "collection_policy": catalog["collection_policy"],
@@ -165,7 +163,5 @@ def build_plan(catalog: dict, sources: dict, rules: dict, manifest: dict,
     result["context_status"] = "available" if context_bundle is not None else "not_available"
     if context_bundle is not None:
         result["config_versions"]["business_context"] = context_bundle["context_version"]
-        result["config_snapshot"]["business_context"] = context_bundle["business_context"]
         result["context_sha256"] = context_bundle["context_sha256"]
-        result["context_warnings"] = context_bundle["warnings"]
     return result

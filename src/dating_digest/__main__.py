@@ -158,7 +158,7 @@ def main() -> None:
         if result["catalog_origin"] == "live_legacy":
             print("Legacy run uses the current catalog. Create a new run to freeze all inputs.")
         if bundle is None:
-            print("Legacy run has no product context; Lovito decision queries are unavailable.")
+            print("Legacy run has no saved product context for so what.")
         return
 
     if (args.start_date is None) != (args.end_date is None):
