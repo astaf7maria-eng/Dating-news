@@ -1,0 +1,16 @@
+{
+  "version": "0.2",
+  "status": "unverified_seed_from_user_examples",
+  "companies": [
+    {"id": "match_group", "name": "Match Group", "aliases": ["Match"], "parent_company_id": null, "official_domains": [], "enabled": false, "verification_status": "pending"},
+    {"id": "tinder", "name": "Tinder", "aliases": ["Тиндер"], "parent_company_id": "match_group", "official_domains": [], "enabled": false, "verification_status": "pending"},
+    {"id": "hinge", "name": "Hinge", "aliases": ["Хиндж"], "parent_company_id": "match_group", "official_domains": [], "enabled": false, "verification_status": "pending"},
+    {"id": "grindr", "name": "Grindr", "aliases": ["Гриндр"], "parent_company_id": null, "official_domains": [], "enabled": false, "verification_status": "pending"},
+    {"id": "bumble", "name": "Bumble", "aliases": ["Бамбл"], "parent_company_id": null, "official_domains": [], "enabled": false, "verification_status": "pending"},
+    {"id": "pure", "name": "Pure", "aliases": ["Пьюр"], "parent_company_id": null, "official_domains": [], "enabled": false, "verification_status": "pending"},
+    {"id": "liangpei_ai", "name": "Liangpei AI", "aliases": [], "parent_company_id": null, "official_domains": [], "enabled": false, "verification_status": "pending"},
+    {"id": "world", "name": "World", "aliases": ["World ID"], "parent_company_id": null, "official_domains": [], "enabled": false, "verification_status": "pending", "scope": "смежный сервис верификации при связи с dating"}
+  ],
+  "coverage_gaps": ["Российские dating-компании ещё не исследованы", "Международный список не исчерпывающий", "Домены, алиасы и связи компаний требуют внешней проверки"],
+  "notes": "Кандидаты из примеров пользователя, не проверенный список рынка. Непроверенные записи отключены от автоматического сбора."
+}

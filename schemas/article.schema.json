@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Article",
+  "type": "object",
+  "required": ["schema_version", "article_id", "source_id", "url", "canonical_url", "title", "language", "published_at", "date_precision", "event_date", "collected_at", "text", "text_sha256", "extraction_status", "company_ids"],
+  "properties": {
+    "schema_version": {"const": "0.1"},
+    "article_id": {"type": "string", "minLength": 1},
+    "source_id": {"type": "string", "minLength": 1},
+    "url": {"type": "string", "format": "uri"},
+    "canonical_url": {"type": "string", "format": "uri"},
+    "title": {"type": "string", "minLength": 1},
+    "language": {"type": "string"},
+    "published_at": {"type": ["string", "null"], "format": "date-time"},
+    "date_precision": {"enum": ["timestamp", "day", "unknown"]},
+    "published_date_raw": {"type": ["string", "null"]},
+    "event_date": {"type": ["string", "null"], "format": "date"},
+    "collected_at": {"type": "string", "format": "date-time"},
+    "text": {"type": ["string", "null"]},
+    "text_sha256": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"},
+    "extraction_status": {"enum": ["full", "partial", "unavailable", "failed"]},
+    "extraction_method": {"type": "string"},
+    "extraction_error": {"type": ["string", "null"]},
+    "company_ids": {"type": "array", "items": {"type": "string"}, "uniqueItems": true}
+  },
+  "$comment": "При точности day полночь — техническое представление, а не известное время публикации. Cross-field проверки текста, хеша и статуса выполняет domain."
+}

@@ -1,0 +1,47 @@
+{
+  "version": "0.3",
+  "timezone": "Europe/Moscow",
+  "schedule": null,
+  "window": {
+    "mode": "user_selected",
+    "suggested_days": 7,
+    "suggested_end": "as_of",
+    "first_step": "confirm_period_before_collection",
+    "last_week_flow": ["propose_exact_range", "ask_yes_no", "if_no_request_custom_dates"],
+    "allow_custom_duration": true,
+    "date_input_end": "inclusive",
+    "explicit_user_dates_count_as_selection": true,
+    "on_missing_answer": "wait_or_cancel_never_auto_accept",
+    "scheduled_run_policy": "require_explicitly_preconfigured_period_policy",
+    "bounds": "start_inclusive_end_exclusive",
+    "eligibility_date": "verified_publication_at_with_new_event_or_disclosure",
+    "unknown_date": "needs_review_no_automatic_inclusion"
+  },
+  "target_news_count": 10,
+  "output_language": "ru",
+  "publication": {
+    "enabled": false,
+    "channel": null,
+    "mode": "dry_run",
+    "require_passed_review": true
+  },
+  "retrieval": {
+    "search_provider": null,
+    "overlap_days": 3,
+    "max_attempts": 3,
+    "request_timeout_seconds": 30
+  },
+  "ranking": {
+    "status": "provisional_until_context_calibration",
+    "scale": "0_to_5",
+    "weights": {
+      "business_relevance": 0.35,
+      "information_novelty": 0.20,
+      "actionability": 0.20,
+      "evidence_quality": 0.15,
+      "market_impact": 0.10
+    },
+    "minimum_score": null,
+    "regional_quotas": null
+  }
+}

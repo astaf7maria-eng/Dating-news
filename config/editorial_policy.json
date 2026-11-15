@@ -1,0 +1,31 @@
+{
+  "version": "0.3",
+  "status": "scope_confirmed_rubric_pending_calibration",
+  "max_news_total": 10,
+  "selection": "global_top_then_group_by_primary_section",
+  "quotas_per_section": null,
+  "empty_section_text": "За выбранный период значимых новостей нет.",
+  "empty_section_on_collection_failure": "Недостаточно данных: сбор по разделу завершился с ошибками.",
+  "numbering": "continuous_display_order_with_separate_priority_rank",
+  "required_item_fields": ["headline", "what_changed", "publication_date", "sources", "so_what_for_lovito"],
+  "sections": [
+    {"id": "features", "title": "Новые функции", "include": "Запуск, тест, заметное изменение функции или раскатка на новый рынок"},
+    {"id": "monetization", "title": "Монетизация", "include": "Новые платные продукты, тарифы, подписки, пакеты, цены и комиссии"},
+    {"id": "trust_safety", "title": "Доверие и безопасность", "include": "Верификация документов и лица, антифрод, защита от мошенничества и харассмента, гарантии, страхование, депозиты", "example_based_extension": "Новая конкретная схема мошенничества с применимым выводом для Lovito; обозначать как внешний риск, не как запуск функции"},
+    {"id": "ai", "title": "AI в продукте", "include": "Ассистенты, автозаполнение, подбор, модерация, скоринг и изменения правил использования AI"},
+    {"id": "new_models", "title": "Небольшие компании с новой механикой", "include": "Малые компании только с новой для рынка механикой; необычная модель, финансирование под новый продукт, пилот у крупного игрока", "require": "Подтверждение новизны механики; размер компании или раунд сами по себе недостаточны"},
+    {"id": "business", "title": "Финансы, сделки, назначения", "include": "Значимые результаты крупных компаний, сделки и назначения; продуктовая часть не обязательна", "require": "Конкретный вывод для бизнес-позиции Lovito или биздева, без инвестиционных рекомендаций"},
+    {"id": "marketing", "title": "Маркетинг и продвижение", "include": "Кампании, реклама, продвижение сервисов и значимые исследования в рамках продвижения", "require": "Новая существенная механика или сигнал; различать рекламные заявления и независимые данные"}
+  ],
+  "deduplication": "Одно событие — один основной раздел; остальные темы — tags. Несколько разных событий из одного отчёта допустимы без повторения фактов.",
+  "freshness": {
+    "require_publication_in_window": true,
+    "require_new_event_or_disclosure": true,
+    "old_event_in_new_reprint": "exclude_without_material_update",
+    "fresh_announcement_of_future_launch": "include_if_significant_label_announced",
+    "date_only_at_partial_day_boundary": "needs_review",
+    "collection_overlap_extends_editorial_window": false
+  },
+  "ranking": "Единый рейтинг 0–100 по значимости для disco/Lovito и биздева. Новизна информации оценивается с учётом категории; отсутствие новой функции не штрафует допустимую финансовую или маркетинговую новость автоматически.",
+  "so_what": "Для Lovito: наблюдение → конкретное значение для disco или биздева → гипотеза/действие → ограничение. Не выдумывать текущие функции, метрики и планы Lovito."
+}

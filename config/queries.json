@@ -1,0 +1,21 @@
+{
+  "version": "0.2",
+  "status": "seed_terms_require_calibration",
+  "languages": ["ru", "en"],
+  "product_signals": {
+    "ru": ["запустил", "запустила", "новая функция", "новый сервис", "тестирует", "пилот", "обновление"],
+    "en": ["launch", "new feature", "rollout", "introduces", "pilot", "beta", "product update"]
+  },
+  "query_templates": ["{company_alias} {product_signal}", "site:{official_domain} {product_signal}"],
+  "category_signals": {
+    "monetization": {"ru": ["тариф", "подписка", "цена", "комиссия", "платный пакет"], "en": ["pricing", "subscription", "paid tier", "premium", "fee"]},
+    "trust_safety": {"ru": ["верификация", "проверка документов", "антифрод", "мошенничество", "харассмент", "депозит", "гарантия", "страхование"], "en": ["verification", "identity check", "fraud", "scam", "harassment", "deposit", "guarantee", "insurance"]},
+    "ai": {"ru": ["AI", "ИИ", "ассистент", "подбор", "скоринг", "модерация"], "en": ["AI", "assistant", "matching", "scoring", "moderation", "agent"]},
+    "new_models": {"ru": ["стартап", "новая модель", "пилот", "раунд"], "en": ["startup", "new model", "pilot", "funding"]},
+    "business": {"ru": ["финансовые результаты", "выручка", "сделка", "поглощение", "назначение"], "en": ["earnings", "revenue", "acquisition", "merger", "appoints"]},
+    "marketing": {"ru": ["кампания", "реклама", "продвижение", "опрос"], "en": ["campaign", "advertising", "brand", "survey", "promotion"]}
+  },
+  "category_query_template": "{company_alias} {category_signal}",
+  "soft_negative_signals": ["гороскоп", "советы для первого свидания", "dating tips", "celebrity gossip"],
+  "notes": "Финансы и маркетинг — разрешённые категории. Словарь стартовый; поисковые даты лишь сужают поиск, точное окно проверяется по статье."
+}

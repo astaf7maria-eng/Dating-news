@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Digest review",
+  "type": "object",
+  "required": ["schema_version", "digest_id", "revision", "result", "checked_at", "issues"],
+  "properties": {
+    "schema_version": {"const": "0.1"},
+    "digest_id": {"type": "string"},
+    "revision": {"type": "integer", "minimum": 1},
+    "result": {"enum": ["passed", "failed"]},
+    "checked_at": {"type": "string", "format": "date-time"},
+    "issues": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["severity", "category", "location", "message", "suggested_fix"],
+        "properties": {
+          "severity": {"enum": ["blocking", "warning"]},
+          "category": {"enum": ["format", "fact", "date", "duplicate", "ranking", "so_what", "source", "coverage"]},
+          "location": {"type": "string"},
+          "message": {"type": "string"},
+          "suggested_fix": {"type": "string"}
+        }
+      }
+    }
+  }
+}

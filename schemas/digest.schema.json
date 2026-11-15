@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Weekly digest",
+  "type": "object",
+  "required": ["schema_version", "digest_id", "revision", "run_id", "window_start", "window_end_exclusive", "timezone", "title", "sections", "items", "shortfall_reason", "coverage_notes", "status"],
+  "properties": {
+    "schema_version": {"const": "0.3"},
+    "digest_id": {"type": "string"},
+    "revision": {"type": "integer", "minimum": 1},
+    "run_id": {"type": "string"},
+    "window_start": {"type": "string", "format": "date-time"},
+    "window_end_exclusive": {"type": "string", "format": "date-time"},
+    "timezone": {"const": "Europe/Moscow"},
+    "sections": {
+      "type": "array", "minItems": 7, "maxItems": 7,
+      "items": {
+        "type": "object",
+        "required": ["section_id", "status", "note"],
+        "properties": {
+          "section_id": {"$ref": "#/$defs/section_id"},
+          "status": {"enum": ["has_news", "no_significant_news", "coverage_incomplete"]},
+          "note": {"type": ["string", "null"]}
+        }
+      }
+    },
+    "title": {"type": "string"},
+    "status": {"enum": ["draft", "review_failed", "review_passed", "published"]},
+    "shortfall_reason": {"type": ["string", "null"]},
+    "coverage_notes": {"type": "array", "items": {"type": "string"}},
+    "items": {
+      "type": "array", "maxItems": 10,
+      "items": {
+        "type": "object",
+        "required": ["rank", "display_order", "section_id", "event_id", "headline", "summary", "published_at", "so_what", "sources", "editorial_override_reason"],
+        "properties": {
+          "rank": {"type": "integer", "minimum": 1, "maximum": 10},
+          "display_order": {"type": "integer", "minimum": 1, "maximum": 10},
+          "section_id": {"$ref": "#/$defs/section_id"},
+          "tags": {"type": "array", "items": {"$ref": "#/$defs/section_id"}, "uniqueItems": true},
+          "published_at": {"type": "string", "format": "date-time"},
+          "event_id": {"type": "string"},
+          "headline": {"type": "string", "minLength": 1},
+          "summary": {"type": "string", "minLength": 1},
+          "so_what": {
+            "type": "object",
+            "required": ["market_signal", "context_link", "hypothesis_or_action", "limitations"],
+            "properties": {
+              "market_signal": {"type": "string", "minLength": 1},
+              "context_link": {"type": "string", "minLength": 1},
+              "hypothesis_or_action": {"type": "string", "minLength": 1},
+              "limitations": {"type": "string", "minLength": 1}
+            }
+          },
+          "sources": {"type": "array", "minItems": 1, "items": {"type": "string", "format": "uri"}, "uniqueItems": true},
+          "editorial_override_reason": {"type": ["string", "null"]}
+        }
+      }
+    }
+  },
+  "$defs": {
+    "section_id": {"enum": ["features", "monetization", "trust_safety", "ai", "new_models", "business", "marketing"]}
+  },
+  "$comment": "Проверять отдельно: ровно 7 уникальных разделов, соответствие статусов составу items, совпадение окна с подтверждённым периодом в manifest, даты источников, непрерывность rank и display_order, отсутствие повторов. Произвольная длительность периода допустима. rank — приоритет, display_order — порядок в посте после группировки."
+}

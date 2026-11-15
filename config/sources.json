@@ -1,0 +1,16 @@
+{
+  "version": "0.2",
+  "status": "unverified_seed_from_user_examples",
+  "sources": [
+    {"id": "gdi", "name": "Global Dating Insights", "url": "https://www.globaldatinginsights.com/", "kind": "industry_media", "language": "en", "fetch_method": "search", "enabled": false, "verification_status": "pending"},
+    {"id": "techcrunch", "name": "TechCrunch", "url": "https://techcrunch.com/", "kind": "industry_media", "language": "en", "fetch_method": "search", "enabled": false, "verification_status": "pending"},
+    {"id": "vedomosti", "name": "Ведомости", "url": "https://www.vedomosti.ru/", "kind": "general_media", "language": "ru", "fetch_method": "search", "enabled": false, "verification_status": "pending"},
+    {"id": "news_ru", "name": "NEWS.ru", "url": "https://news.ru/", "kind": "general_media", "language": "ru", "fetch_method": "search", "enabled": false, "verification_status": "pending"},
+    {"id": "mail_news", "name": "Новости Mail", "url": "https://news.mail.ru/", "kind": "general_media", "language": "ru", "fetch_method": "search", "enabled": false, "verification_status": "pending"},
+    {"id": "panabee", "name": "Panabee", "url": "https://www.panabee.com/", "kind": "general_media", "language": "en", "fetch_method": "search", "enabled": false, "verification_status": "pending"}
+  ],
+  "coverage_gaps": ["Добавить проверенные официальные newsroom/blog/release notes и investor relations", "Проверить оригиналы источников, упомянутых внутри перепечаток"],
+  "allowed_kinds": ["official_newsroom", "official_blog", "release_notes", "investor_relations", "app_store", "industry_media", "general_media"],
+  "allowed_fetch_methods": ["rss", "search", "html", "api"],
+  "notes": "Домены взяты из ссылок в пользовательских примерах, не проверены в сети. Ссылки на конкретные статьи сохранены в оригинале примеров."
+}
