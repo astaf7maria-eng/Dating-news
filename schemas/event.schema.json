@@ -2,9 +2,9 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Product event",
   "type": "object",
-  "required": ["schema_version", "event_id", "company_ids", "headline", "section_id", "event_kind", "launch_stage", "markets", "article_ids", "facts", "eligibility", "ranking"],
+  "required": ["schema_version", "event_id", "company_ids", "headline", "section_id", "event_kind", "launch_stage", "markets", "article_ids", "facts", "eligibility", "ranking", "context_assessment"],
   "properties": {
-    "schema_version": {"const": "0.2"},
+    "schema_version": {"const": "0.3"},
     "event_id": {"type": "string", "minLength": 1},
     "company_ids": {"type": "array", "minItems": 1, "items": {"type": "string"}},
     "headline": {"type": "string", "minLength": 1},
@@ -36,7 +36,7 @@
     },
     "ranking": {
       "type": ["object", "null"],
-      "required": ["criteria", "total_score", "context_version"],
+      "required": ["criteria", "total_score", "context_version", "context_sha256"],
       "properties": {
         "criteria": {
           "type": "array",
@@ -51,8 +51,32 @@
           }
         },
         "total_score": {"type": "number", "minimum": 0, "maximum": 100},
-        "context_version": {"type": "string"}
+        "context_version": {"type": "string"},
+        "context_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
       }
+    },
+    "context_assessment": {
+      "type": ["object", "null"],
+      "required": ["relevance_type", "question_ids", "claim_ids", "rationale", "application_horizon"],
+      "properties": {
+        "relevance_type": {"enum": ["decision_support", "market_watch"]},
+        "question_ids": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+        "claim_ids": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+        "rationale": {"type": "string", "minLength": 1},
+        "application_horizon": {"enum": ["pilot_design", "future_option", "market_watch"]}
+      },
+      "allOf": [{
+        "if": {"type": "object", "properties": {"relevance_type": {"const": "decision_support"}}, "required": ["relevance_type"]},
+        "then": {"properties": {"question_ids": {"minItems": 1}}}
+      }]
     }
-  }
+  },
+  "allOf": [{
+    "if": {"properties": {"ranking": {"type": "object"}}, "required": ["ranking"]},
+    "then": {"properties": {"context_assessment": {"type": "object"}}}
+  }, {
+    "if": {"properties": {"eligibility": {"properties": {"status": {"const": "included"}}, "required": ["status"]}}, "required": ["eligibility"]},
+    "then": {"properties": {"context_assessment": {"type": "object"}}}
+  }],
+  "$comment": "Для оценённого/отобранного события context_assessment не null. ID и отпечаток проверять по context_bundle.json запуска. decision_support требует непустого question_ids; market_watch допускает пустые ID с конкретным обоснованием значимости. Контекст не является фильтром допуска."
 }

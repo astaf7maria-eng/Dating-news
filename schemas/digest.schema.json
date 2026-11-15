@@ -2,9 +2,11 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Weekly digest",
   "type": "object",
-  "required": ["schema_version", "digest_id", "revision", "run_id", "window_start", "window_end_exclusive", "timezone", "title", "sections", "items", "shortfall_reason", "coverage_notes", "status"],
+  "required": ["schema_version", "digest_id", "revision", "run_id", "context_version", "context_sha256", "window_start", "window_end_exclusive", "timezone", "title", "sections", "items", "shortfall_reason", "coverage_notes", "status"],
   "properties": {
-    "schema_version": {"const": "0.3"},
+    "schema_version": {"const": "0.4"},
+    "context_version": {"type": "string", "minLength": 1},
+    "context_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
     "digest_id": {"type": "string"},
     "revision": {"type": "integer", "minimum": 1},
     "run_id": {"type": "string"},
@@ -43,12 +45,25 @@
           "summary": {"type": "string", "minLength": 1},
           "so_what": {
             "type": "object",
-            "required": ["market_signal", "context_link", "hypothesis_or_action", "limitations"],
+            "required": ["market_signal", "context_link", "hypothesis_or_action", "limitations", "context_refs"],
             "properties": {
               "market_signal": {"type": "string", "minLength": 1},
               "context_link": {"type": "string", "minLength": 1},
               "hypothesis_or_action": {"type": "string", "minLength": 1},
-              "limitations": {"type": "string", "minLength": 1}
+              "limitations": {"type": "string", "minLength": 1},
+              "context_refs": {
+                "type": "object",
+                "required": ["relevance_type", "question_ids", "claim_ids"],
+                "properties": {
+                  "relevance_type": {"enum": ["decision_support", "market_watch"]},
+                  "question_ids": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+                  "claim_ids": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true}
+                },
+                "allOf": [{
+                  "if": {"properties": {"relevance_type": {"const": "decision_support"}}, "required": ["relevance_type"]},
+                  "then": {"properties": {"question_ids": {"minItems": 1}}}
+                }]
+              }
             }
           },
           "sources": {"type": "array", "minItems": 1, "items": {"type": "string", "format": "uri"}, "uniqueItems": true},

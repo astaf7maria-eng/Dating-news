@@ -6,6 +6,7 @@ from pathlib import Path
 import unittest
 
 from dating_digest.discovery.plan import build_plan
+from dating_digest.__main__ import CONFIG_NAMES, read_json, validate_configs
 
 
 class DiscoveryTests(unittest.TestCase):
@@ -76,15 +77,21 @@ class DiscoveryTests(unittest.TestCase):
         self.assertEqual(plan["config_snapshot"]["queries"], self.rules)
 
     def test_catalog_references_resolve(self):
-        company_ids = {c["id"] for c in self.catalog["companies"]}
-        source_ids = {s["id"] for s in self.sources["sources"]}
-        self.assertEqual(len(company_ids), len(self.catalog["companies"]))
-        self.assertEqual(len(source_ids), len(self.sources["sources"]))
-        for company in self.catalog["companies"]:
-            self.assertTrue(set(company["source_ids"]) <= source_ids)
-        for source in self.sources["sources"]:
-            self.assertTrue(set(source["company_ids"]) <= company_ids)
+        root = Path(__file__).resolve().parents[1]
+        validate_configs({name: read_json(root / "config" / f"{name}.json") for name in CONFIG_NAMES}, root / "schemas")
         self.assertEqual(len(self.golden["cases"]), 10)
+
+    def test_same_query_for_two_models_preserves_both_coverage_links(self):
+        rules = copy.deepcopy(self.rules)
+        pattern = copy.deepcopy(rules["discovery"]["business_model_patterns"][0])
+        original_id = pattern["id"]
+        pattern["id"] = "same_words_different_model"
+        rules["discovery"]["business_model_patterns"].append(pattern)
+        plan = build_plan(self.catalog, self.sources, rules, self.manifest)
+        original = [q for q in plan["queries"] if q["model_id"] == original_id]
+        duplicate = [q for q in plan["queries"] if q["model_id"] == pattern["id"]]
+        self.assertEqual([q["query"] for q in original], [q["query"] for q in duplicate])
+        self.assertTrue({q["query_id"] for q in original}.isdisjoint(q["query_id"] for q in duplicate))
 
 
 if __name__ == "__main__":

@@ -1,5 +1,5 @@
 {
-  "version": "0.4",
+  "version": "0.5",
   "status": "monitoring_catalog_v1",
   "checked_on": "2026-11-15",
   "required_always_company_ids": [
@@ -34,7 +34,6 @@
         "tinder.com"
       ],
       "enabled": true,
-      "mandatory_monitoring": true,
       "search_languages": [
         "ru",
         "en"
@@ -61,7 +60,6 @@
         "badoo.com"
       ],
       "enabled": true,
-      "mandatory_monitoring": true,
       "search_languages": [
         "ru",
         "en"
@@ -89,7 +87,6 @@
         "ir.bumble.com"
       ],
       "enabled": true,
-      "mandatory_monitoring": true,
       "search_languages": [
         "ru",
         "en"
@@ -116,7 +113,6 @@
         "hinge.co"
       ],
       "enabled": true,
-      "mandatory_monitoring": true,
       "search_languages": [
         "ru",
         "en"
@@ -144,7 +140,6 @@
         "investors.grindr.com"
       ],
       "enabled": true,
-      "mandatory_monitoring": true,
       "search_languages": [
         "ru",
         "en"
@@ -173,7 +168,6 @@
         "ir.mtch.com"
       ],
       "enabled": true,
-      "mandatory_monitoring": true,
       "search_languages": [
         "ru",
         "en"
@@ -203,7 +197,6 @@
         "press.pure.app"
       ],
       "enabled": true,
-      "mandatory_monitoring": true,
       "search_languages": [
         "ru",
         "en"
@@ -238,7 +231,6 @@
       ],
       "official_domains": [],
       "enabled": true,
-      "mandatory_monitoring": true,
       "search_languages": [
         "ru",
         "en",
@@ -281,7 +273,6 @@
         "world.org"
       ],
       "enabled": true,
-      "mandatory_monitoring": true,
       "search_languages": [
         "ru",
         "en"
@@ -318,7 +309,6 @@
       ],
       "official_domains": [],
       "enabled": true,
-      "mandatory_monitoring": true,
       "search_languages": [
         "ru",
         "en"
@@ -351,7 +341,6 @@
       ],
       "official_domains": [],
       "enabled": true,
-      "mandatory_monitoring": true,
       "search_languages": [
         "ru",
         "en"
@@ -386,7 +375,6 @@
         "theharrispoll.com"
       ],
       "enabled": true,
-      "mandatory_monitoring": true,
       "search_languages": [
         "ru",
         "en"
@@ -423,7 +411,6 @@
         "mamba.group"
       ],
       "enabled": true,
-      "mandatory_monitoring": false,
       "search_languages": [
         "ru",
         "en"
@@ -457,7 +444,6 @@
         "twinby.ru"
       ],
       "enabled": true,
-      "mandatory_monitoring": false,
       "search_languages": [
         "ru",
         "en"
@@ -484,7 +470,6 @@
         "vk.company.ru"
       ],
       "enabled": true,
-      "mandatory_monitoring": false,
       "search_languages": [
         "ru",
         "en"
@@ -511,7 +496,6 @@
         "teamo.ru"
       ],
       "enabled": true,
-      "mandatory_monitoring": false,
       "search_languages": [
         "ru",
         "en"
@@ -537,7 +521,6 @@
         "loveplanet.ru"
       ],
       "enabled": true,
-      "mandatory_monitoring": false,
       "search_languages": [
         "ru",
         "en"
@@ -564,7 +547,6 @@
         "feeld.co"
       ],
       "enabled": true,
-      "mandatory_monitoring": false,
       "search_languages": [
         "ru",
         "en"
@@ -590,7 +572,6 @@
         "happn.com"
       ],
       "enabled": true,
-      "mandatory_monitoring": false,
       "search_languages": [
         "ru",
         "en"
@@ -616,7 +597,6 @@
         "coffeemeetsbagel.com"
       ],
       "enabled": true,
-      "mandatory_monitoring": false,
       "search_languages": [
         "ru",
         "en"
@@ -642,7 +622,6 @@
         "pairs.lv"
       ],
       "enabled": true,
-      "mandatory_monitoring": false,
       "search_languages": [
         "ru",
         "en"
@@ -678,7 +657,6 @@
         "tapple.me"
       ],
       "enabled": true,
-      "mandatory_monitoring": false,
       "search_languages": [
         "ru",
         "en"
@@ -704,7 +682,6 @@
         "hily.com"
       ],
       "enabled": true,
-      "mandatory_monitoring": false,
       "search_languages": [
         "ru",
         "en"
@@ -729,7 +706,6 @@
         "boo.world"
       ],
       "enabled": true,
-      "mandatory_monitoring": false,
       "search_languages": [
         "ru",
         "en"
@@ -764,7 +740,6 @@
         "breeze.social"
       ],
       "enabled": true,
-      "mandatory_monitoring": false,
       "search_languages": [
         "ru",
         "en"
@@ -801,7 +776,6 @@
         "thursday.com"
       ],
       "enabled": true,
-      "mandatory_monitoring": false,
       "search_languages": [
         "ru",
         "en"
@@ -837,7 +811,6 @@
         "content.sitch.net"
       ],
       "enabled": true,
-      "mandatory_monitoring": false,
       "search_languages": [
         "ru",
         "en"

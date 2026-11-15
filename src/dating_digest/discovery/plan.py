@@ -7,6 +7,7 @@ from hashlib import sha256
 from urllib.parse import urlsplit
 
 from dating_digest.domain.window import validate_window
+from dating_digest.domain.context import validate_context_bundle
 
 
 def _or(terms: list[str]) -> str:
@@ -15,7 +16,8 @@ def _or(terms: list[str]) -> str:
     return "(" + " OR ".join('"' + term.replace('"', '') + '"' for term in dict.fromkeys(terms)) + ")"
 
 
-def build_plan(catalog: dict, sources: dict, rules: dict, manifest: dict) -> dict:
+def build_plan(catalog: dict, sources: dict, rules: dict, manifest: dict,
+               context_bundle: dict | None = None) -> dict:
     if manifest.get("window_confirmation", {}).get("status") != "confirmed":
         raise ValueError("Сначала выберите и подтвердите период")
     start, end = validate_window(
@@ -23,15 +25,18 @@ def build_plan(catalog: dict, sources: dict, rules: dict, manifest: dict) -> dic
         datetime.fromisoformat(manifest["window_end_exclusive"]),
     )
     companies = [c for c in catalog["companies"] if c["enabled"]]
-    known_ids = {c["id"] for c in companies}
-    required = (catalog["required_always_company_ids"] + catalog["golden_set_company_ids"]
-                + catalog["golden_adjacent_company_ids"])
-    if not set(required) <= known_ids:
+    required = set(catalog["required_always_company_ids"] + catalog["golden_set_company_ids"]
+                   + catalog["golden_adjacent_company_ids"])
+    if not required <= {company["id"] for company in companies}:
         raise ValueError("Обязательную компанию нельзя отключить или удалить из плана")
+    saved_context = manifest.get("business_context")
+    if saved_context and context_bundle is None:
+        raise ValueError("Run context snapshot is missing; create a new run")
     queries, seen = [], set()
 
-    def add(lane, language, family, query, company_ids=(), source_id=None, model_id=None):
-        identity = f"{lane}|{language}|{family}|{query}|{','.join(company_ids)}|{source_id}"
+    def add(lane, language, family, query, company_ids=(), source_id=None, model_id=None,
+            decision_id=None):
+        identity = f"{lane}|{language}|{family}|{query}|{','.join(company_ids)}|{source_id}|{model_id}|{decision_id}"
         query_id = sha256(identity.encode("utf-8")).hexdigest()[:20]
         if query_id in seen:
             return
@@ -40,6 +45,7 @@ def build_plan(catalog: dict, sources: dict, rules: dict, manifest: dict) -> dic
             "query_id": query_id, "lane": lane, "language": language,
             "family": family, "query": query, "company_ids": list(company_ids),
             "source_id": source_id, "model_id": model_id, "status": "planned",
+            "decision_id": decision_id,
         })
 
     for company in companies:
@@ -84,14 +90,23 @@ def build_plan(catalog: dict, sources: dict, rules: dict, manifest: dict) -> dic
         for source in sources["sources"]:
             if source["enabled"] and source["id"] in discovery["source_seed_ids"]:
                 host = urlsplit(source["url"]).hostname
-                add("discovery", "en", "new_models",
+                add("discovery", source["language"], "new_models",
                     f"site:{host} " + _or(["dating startup", "new dating app", "matchmaking launch"]),
                     source_id=source["id"], model_id="industry_source")
         for item in discovery.get("risk_queries", []):
             add("risk_monitoring", item["language"], "trust_safety", item["query"])
 
-    return {
-        "schema_version": "0.4", "run_id": manifest["run_id"],
+    if context_bundle is not None:
+        validate_context_bundle(context_bundle)
+        if saved_context and (saved_context.get("sha256") != context_bundle["context_sha256"]
+                              or saved_context.get("version") != context_bundle["context_version"]):
+            raise ValueError("Context bundle does not match run manifest")
+        for question in context_bundle["business_context"]["decision_questions"]:
+            for language, query in question["search_queries"].items():
+                add("context", language, "decision_support", query, decision_id=question["id"])
+
+    result = {
+        "schema_version": "0.6", "run_id": manifest["run_id"],
         "window_start": start.isoformat(), "window_end_exclusive": end.isoformat(),
         "timezone": "Europe/Moscow", "status": "planned_not_executed",
         "config_versions": {"companies": catalog["version"], "sources": sources["version"], "queries": rules["version"]},
@@ -103,3 +118,10 @@ def build_plan(catalog: dict, sources: dict, rules: dict, manifest: dict) -> dic
         "query_count": len(queries), "queries": queries,
         "notes": "План не является результатом поиска. Даты передаются адаптеру провайдера; полнота и сохранение проверяются после выполнения.",
     }
+    result["context_status"] = "available" if context_bundle is not None else "not_available"
+    if context_bundle is not None:
+        result["config_versions"]["business_context"] = context_bundle["context_version"]
+        result["config_snapshot"]["business_context"] = context_bundle["business_context"]
+        result["context_sha256"] = context_bundle["context_sha256"]
+        result["context_warnings"] = context_bundle["warnings"]
+    return result

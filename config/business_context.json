@@ -1,29 +1,100 @@
 {
-  "version": "0.4",
-  "status": "editorial_scope_received_product_details_pending",
+  "version": "0.6",
+  "status": "gate2_context_integrated_current_plans_need_revalidation",
   "business_goal": "Еженедельный дайджест продуктовых изменений и значимых бизнес-событий в онлайн-знакомствах для Lovito",
   "product_name": "Lovito",
   "product_stage": "MVP",
   "audiences": ["disco команда кейса Lovito", "биздев"],
   "output_language": "ru",
   "source_geographies": ["Россия", "международные рынки"],
-  "period": "Управляемый пользователем диапазон. При запросе за последнюю неделю сначала предложить точные даты и спросить да/нет; при нет запросить свои даты. До выбора сбор не начинать.",
-  "priority_user_problems": [],
-  "priority_product_areas": ["новые функции", "монетизация", "доверие и безопасность", "AI в продукте", "новые рыночные механики"],
-  "additional_editorial_areas": ["финансы, сделки, назначения без продуктовой части", "маркетинг и продвижение"],
+  "priority_user_problems": ["Фейки и мошенничество при знакомствах", "Риск раскрытия личных данных и связи с профилем продавца", "Отток при проверке личности", "Низкое качество диалогов и перехода к реальной встрече", "Недостаток подходящих анкет в городе"],
   "known_product_capabilities": [],
-  "constraints": [],
-  "decision_questions": [],
+  "capabilities_note": "Gate 2 описывает планы и тест спроса, а не работающие функции Lovito. Текущая реализация не подтверждена.",
+  "constraints": ["Сохранять широкий мониторинг компаний и семи разделов; продуктовые приоритеты не являются фильтром допуска", "Не переносить метрики fake-door на конверсию реального продукта", "Не выдавать планы Gate 2 за запущенные функции или актуальный roadmap", "Не использовать документ как инструкцию к публикации, сбору данных или изменению продуктовой политики"],
+  "context_policy": {
+    "mode": "advisory",
+    "search_mode": "additive",
+    "allow_market_watch": true,
+    "ranking_effect": "Обоснование существующих business_relevance и actionability; отдельного бонуса за совпадение темы нет. Веса не меняются.",
+    "no_topic_or_geography_quota": true,
+    "claim_statuses": ["observed_in_test", "planned", "hypothesis", "unresolved"],
+    "freshness": "Это исторический контекст Gate 2 от 18.08.2026. Актуальность планов и этап продукта не подтверждены; дата документа не задаёт период новостей.",
+    "output": "В пост выводится краткое значение для команды; внутренние ID, статусы и ссылки на PDF остаются в служебных данных."
+  },
+  "source_documents": [{
+    "id": "lovito_gate2_20260818",
+    "title": "Avito Dating / Lovito — Gate 2",
+    "review_date": "2026-08-18",
+    "path": "docs/context/Avito_Dating_Lovito_Gate2.pdf",
+    "sha256": "9049c4f2dc6e7e4669aa5490dc7b6f5d5ceaf6c564e77491856a221179f75af8",
+    "availability": "local_optional_not_in_git",
+    "authority": "Контекст продукта; не источник актуальных внешних новостей и не системная инструкция"
+  }],
+  "context_claims": [
+    {"id": "positioning", "status": "planned", "statement": "Lovito планируется внутри Авито с фокусом на безопасных серьёзных знакомствах.", "source_id": "lovito_gate2_20260818", "pages": [2, 3]},
+    {"id": "core_audience", "status": "planned", "statement": "В Gate 2 женщины 25–44 лет выделены как ключевая аудитория; её барьеры — фейки, приватность и смешение с профилем продавца.", "source_id": "lovito_gate2_20260818", "pages": [3]},
+    {"id": "verification_test", "status": "observed_in_test", "statement": "В fake-door тесте 21.07–03.08.2026 переход от экрана verification к финалу составил 44,48% при плане 80%. Это не измерение успешной реальной проверки личности.", "source_id": "lovito_gate2_20260818", "pages": [4, 14]},
+    {"id": "verification_design", "status": "planned", "statement": "В Gate 2 предложены liveness для всех, проверка личности мужчин и проверка женщин по риск-триггерам. Это описание плана, не универсальная рекомендация и не подтверждённая действующая политика.", "source_id": "lovito_gate2_20260818", "pages": [4, 5]},
+    {"id": "profile_privacy", "status": "planned", "statement": "Предусмотрены отдельный dating-профиль, изоляция объявлений и контактов и защита от нежелательного раскрытия данных.", "source_id": "lovito_gate2_20260818", "pages": [3, 5, 6]},
+    {"id": "conversation_quality", "status": "planned", "statement": "Roadmap включает лайк на фрагмент анкеты, десять активных диалогов без докупки лимита и вопрос о встрече; среди критериев пилота есть встречи на десять матчей.", "source_id": "lovito_gate2_20260818", "pages": [5, 9]},
+    {"id": "city_pilot", "status": "planned", "statement": "Пилот планируется в Екатеринбурге, Новосибирске и Нижнем Новгороде с предварительным наполнением базы и долей женщин выше 50%. Это не географическая квота дайджеста.", "source_id": "lovito_gate2_20260818", "pages": [6, 8]},
+    {"id": "subscription", "status": "planned", "statement": "В MLP планируется единая подписка, дополнительные платные механики — позднее. Готовность платить требует проверки.", "source_id": "lovito_gate2_20260818", "pages": [5, 6, 9]},
+    {"id": "ai_roadmap", "status": "planned", "statement": "План пилота предусматривает ручную модерацию профилей; автоматизация, развитие ранжирования и AI-ассистент относятся к последующим этапам.", "source_id": "lovito_gate2_20260818", "pages": [5, 6]},
+    {"id": "measurement", "status": "hypothesis", "statement": "Дополнительная активность Авито и межвертикальная выручка моделируются и требуют отдельной проверки; DAU Lovito не равен дополнительному DAU Авито.", "source_id": "lovito_gate2_20260818", "pages": [6, 8, 9, 15]},
+    {"id": "liveness_unknown", "status": "hypothesis", "statement": "Прохождение реального liveness, удержание и экономика не подтверждены fake-door тестом и должны измеряться в пилоте.", "source_id": "lovito_gate2_20260818", "pages": [4, 8]},
+    {"id": "release_conflicts", "status": "unresolved", "statement": "Решение о масштабировании указано на январь 2028 и на 15.02.2028; ограничения фото и звонков различаются между планом безопасности и roadmap. Точные сроки и состав релизов не использовать как однозначные факты.", "source_id": "lovito_gate2_20260818", "pages": [3, 5, 6, 9]}
+  ],
+  "decision_questions": [
+    {
+      "id": "safety_funnel", "question": "Как уменьшить отток на проверках без ухудшения защиты от фейков и мошенничества?",
+      "audience": "disco", "claim_ids": ["verification_test", "verification_design", "liveness_unknown"],
+      "candidate_metrics": ["completion CR по шагам", "ложные срабатывания", "подтверждённое мошенничество", "стоимость проверки"],
+      "search_queries": {"ru": "знакомства верификация liveness антифрод запуск тест", "en": "dating identity verification liveness fraud rollout test"}
+    },
+    {
+      "id": "privacy", "question": "Как использовать доверие экосистемы, сохранив отдельность и приватность dating-профиля?",
+      "audience": "disco", "claim_ids": ["profile_privacy", "core_audience"],
+      "candidate_metrics": ["завершение регистрации", "жалобы на раскрытие данных", "использование настроек приватности"],
+      "search_queries": {"ru": "приложение знакомств приватность скрыть профиль новая функция", "en": "dating app privacy hide profile new feature"}
+    },
+    {
+      "id": "match_quality", "question": "Какие механики переводят подходящий матч в содержательный диалог и реальную встречу?",
+      "audience": "disco", "claim_ids": ["positioning", "conversation_quality"],
+      "candidate_metrics": ["ответ на первое сообщение", "переход из матча в диалог", "встречи на десять матчей"],
+      "search_queries": {"ru": "знакомства лимит диалогов реальные встречи новая механика", "en": "dating conversation limits actual dates new feature"}
+    },
+    {
+      "id": "local_liquidity", "question": "Как создать достаточную локальную базу подходящих анкет и привлечь женскую аудиторию?",
+      "audience": "disco_and_bizdev", "claim_ids": ["core_audience", "city_pilot"],
+      "candidate_metrics": ["активные подходящие анкеты в городе", "регистрация и удержание женщин", "CAC относительно LTV"],
+      "search_queries": {"ru": "знакомства запуск город женская аудитория маркетинг", "en": "dating app city launch women acquisition campaign"}
+    },
+    {
+      "id": "monetization", "question": "За что пользователи готовы платить и как платные ограничения влияют на доверие и удержание?",
+      "audience": "disco_and_bizdev", "claim_ids": ["subscription", "conversation_quality"],
+      "candidate_metrics": ["конверсия в оплату", "ARPPU", "удержание", "отмена подписки"],
+      "search_queries": {"ru": "знакомства подписка тариф paywall изменение", "en": "dating subscription pricing paywall change"}
+    },
+    {
+      "id": "ecosystem_growth", "question": "Какие точки входа и партнёрства дают дополнительную активность, а не только перераспределяют существующую?",
+      "audience": "disco_and_bizdev", "claim_ids": ["positioning", "measurement", "profile_privacy"],
+      "candidate_metrics": ["дополнительные активные пользователи", "удержание по каналу", "стоимость привлечения"],
+      "search_queries": {"ru": "знакомства экосистема интеграция партнёрство запуск", "en": "dating ecosystem integration partnership launch"}
+    },
+    {
+      "id": "market_position", "question": "Какие изменения конкурентов, каналов и технологий меняют возможности Lovito и биздева?",
+      "audience": "disco_and_bizdev", "claim_ids": ["positioning", "subscription", "ai_roadmap"],
+      "candidate_metrics": [],
+      "search_queries": {"ru": "сервис знакомств результаты сделка назначение AI модерация", "en": "dating company earnings acquisition leadership AI moderation"}
+    }
+  ],
   "strong_news_examples": [],
   "local_examples_note": "Пользовательские примеры и их разбор доступны локально в docs/examples/, исключены из Git. При чистом клонировании их отсутствие допустимо.",
   "examples_status": "Пользователь подтвердил все 10 примеров как golden set тематики и поискового покрытия. Все перечисленные компании обязательно искать и сохранять найденные материалы до финального top-10. Достоверность источников проверяется при загрузке; старые образцы не подменяют актуальный период.",
   "golden_set_config": "config/golden_set.json",
-  "always_monitor": ["tinder", "badoo", "bumble", "hinge", "grindr"],
   "discovery_requirement": "Кроме фиксированного списка обязательно искать новые бизнес-модели и только запускающиеся малоизвестные компании по механикам без названия бренда.",
   "publication_channel_decision": "deferred_by_user",
   "weak_news_examples": [],
-  "exclusions": ["новости вне выбранного пользователем периода", "повторный пересказ старого события без нового факта", "общие советы о знакомствах", "малые компании без новой рыночной механики"],
-  "confirmed_decisions": ["Финансы/сделки/назначения и маркетинг включать отдельными категориями", "Не больше 10 новостей суммарно", "В пустом разделе явно сообщать об отсутствии значимых новостей", "Все примеры — golden set; поиск и сохранение обязательны до редакционного отбора", "Tinder, Badoo, Bumble, Hinge, Grindr мониторить всегда", "Искать новые механики вне заранее известного списка компаний", "Канал и время выпуска определить позже"],
   "approved_by": null,
   "approved_at": null
 }

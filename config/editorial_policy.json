@@ -1,5 +1,5 @@
 {
-  "version": "0.4",
+  "version": "0.6",
   "status": "scope_confirmed_rubric_pending_calibration",
   "max_news_total": 10,
   "collection_limit": "Не ограничивать сбор десяткой: обязательные компании и golden set ищутся и сохраняются до рейтинга. Ограничение 10 применяется только к выпуску.",
@@ -9,7 +9,7 @@
   "empty_section_text": "За выбранный период значимых новостей нет.",
   "empty_section_on_collection_failure": "Недостаточно данных: сбор по разделу завершился с ошибками.",
   "numbering": "continuous_display_order_with_separate_priority_rank",
-  "required_item_fields": ["headline", "what_changed", "publication_date", "sources", "so_what_for_lovito"],
+  "item_contract": "schemas/digest.schema.json#/properties/items/items",
   "sections": [
     {"id": "features", "title": "Новые функции", "include": "Запуск, тест, заметное изменение функции или раскатка на новый рынок"},
     {"id": "monetization", "title": "Монетизация", "include": "Новые платные продукты, тарифы, подписки, пакеты, цены и комиссии"},
@@ -29,5 +29,14 @@
     "collection_overlap_extends_editorial_window": false
   },
   "ranking": "Единый рейтинг 0–100 по значимости для disco/Lovito и биздева. Новизна информации оценивается с учётом категории; отсутствие новой функции не штрафует допустимую финансовую или маркетинговую новость автоматически.",
+  "context_application": {
+    "input": "context_bundle.json данного запуска",
+    "mode": "advisory",
+    "relevance_types": ["decision_support", "market_watch"],
+    "scoring": "Учитывать в business_relevance и actionability, без нового критерия или бонуса за совпадение темы; веса пока предварительные.",
+    "market_watch": "Значимое изменение рынка, конкурентов или возможностей биздева допускается без прямой связи с roadmap; нужна конкретная причина.",
+    "provenance": "Сохранять context_version, context_sha256, question_ids и claim_ids; не выводить внутренние ID в пост.",
+    "claims": "Планы, результаты теста, гипотезы и нерешённые вопросы имеют разные статусы; актуальность исторического Gate 2 не подразумевается."
+  },
   "so_what": "Для Lovito: наблюдение → конкретное значение для disco или биздева → гипотеза/действие → ограничение. Не выдумывать текущие функции, метрики и планы Lovito."
 }

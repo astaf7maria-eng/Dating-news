@@ -1,5 +1,5 @@
 {
-  "version": "0.3",
+  "version": "0.4",
   "timezone": "Europe/Moscow",
   "schedule": null,
   "window": {
@@ -17,8 +17,6 @@
     "eligibility_date": "verified_publication_at_with_new_event_or_disclosure",
     "unknown_date": "needs_review_no_automatic_inclusion"
   },
-  "target_news_count": 10,
-  "output_language": "ru",
   "publication": {
     "enabled": false,
     "channel": null,
