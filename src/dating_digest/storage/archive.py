@@ -1,12 +1,9 @@
-"""Immutable dated JSON files with an indexed cross-run duplicate check.
-
-SQLite is a persistent catalog of identities, sources and run observations.
-Article bodies live in ordinary UTF-8 JSON files and are never overwritten.
-"""
+"""Immutable dated JSON files, cross-run identities and source observations."""
 
 from __future__ import annotations
 
 from collections import Counter
+from contextlib import contextmanager
 from datetime import date, datetime, timezone
 from hashlib import sha256
 import json
@@ -14,18 +11,11 @@ import os
 from pathlib import Path
 import re
 import sqlite3
-from tempfile import TemporaryDirectory
 import unicodedata
 from urllib.parse import unquote_plus, urlsplit, urlunsplit
 
 from dating_digest.domain.window import MOSCOW
-
-
-def _read(path: Path) -> dict:
-    value = json.loads(path.read_text(encoding="utf-8-sig"))
-    if not isinstance(value, dict):
-        raise ValueError(f"Expected JSON object: {path}")
-    return value
+from dating_digest.io import read_json as _read, write_json as _publish
 
 
 def _json(value) -> str:
@@ -34,21 +24,6 @@ def _json(value) -> str:
 
 def _digest(value: str) -> str:
     return sha256(value.encode("utf-8")).hexdigest()
-
-
-def _publish(path: Path, value: dict | list, *, replace: bool = False) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with TemporaryDirectory(prefix=".write-", dir=path.parent) as temporary:
-        staging = Path(temporary) / path.name
-        with staging.open("x", encoding="utf-8", newline="\n") as stream:
-            json.dump(value, stream, ensure_ascii=False, indent=2)
-            stream.write("\n")
-            stream.flush()
-            os.fsync(stream.fileno())
-        if replace:
-            os.replace(staging, path)
-        else:
-            os.link(staging, path)
 
 
 def normalize_url(value: str) -> str:
@@ -81,7 +56,7 @@ def publication_day(article: dict) -> date | None:
                 return value.date()
             if value.tzinfo is not None:
                 return value.astimezone(MOSCOW).date()
-            if precision == "day" or key == "published_date_raw":
+            if precision == "day":
                 return value.date()
         except ValueError:
             pass
@@ -125,6 +100,7 @@ class ArticleArchive:
     def __init__(self, root: Path | str = "article"):
         self.root = Path(root).resolve()
 
+    @contextmanager
     def _connect(self):
         self.root.mkdir(parents=True, exist_ok=True)
         db = sqlite3.connect(self.root / ".archive.sqlite3", timeout=30)
@@ -141,10 +117,10 @@ class ArticleArchive:
             db.execute("BEGIN IMMEDIATE")
             for sql in statements:
                 db.execute(sql)
-            return db
-        except BaseException:
+            with db:
+                yield db
+        finally:
             db.close()
-            raise
 
     def _record(self, db, path: Path, article: dict):
         if not path.resolve().is_relative_to(self.root):
@@ -160,8 +136,7 @@ class ArticleArchive:
 
     def save(self, article: dict, *, run_id: str = "manual", source_path: str | None = None) -> dict:
         value, text_hash, signature, urls, day = _prepare(article)
-        db = self._connect()
-        try:
+        with self._connect() as db:
             # Recover immutable JSONs if the catalog was lost or first creation
             # was interrupted. Normal saves use indexed lookups, not a tree scan.
             if not db.execute("SELECT 1 FROM records LIMIT 1").fetchone():
@@ -233,16 +208,10 @@ class ArticleArchive:
             db.execute("INSERT OR IGNORE INTO observations VALUES (?,?,?,?,?,?)", (
                 row["id"], run_id, signature, _digest(metadata_json), metadata_json, datetime.now(timezone.utc).isoformat()
             ))
-            db.commit()
             return {"article_id": value["article_id"], "stored_article_id": row["article_id"],
                     "url": value.get("url"), "canonical_url": value.get("canonical_url"),
                     "action": action, "archive_path": row["path"], "matched_by": sorted(matched_by),
                     "previous_versions": previous_paths if action == "new_version" else []}
-        except BaseException:
-            db.rollback()
-            raise
-        finally:
-            db.close()
 
 
 def archive_run(run_dir: Path | str, archive_dir: Path | str | None = None) -> dict:

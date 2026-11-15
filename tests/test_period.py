@@ -51,7 +51,7 @@ class ConfigAndWriteTests(unittest.TestCase):
             for target, options in (("json.dump", {"side_effect": interrupted}),
                                     ("os.fsync", {"side_effect": OSError("sync failed")}),
                                     ("os.link", {"side_effect": OSError("link failed")})):
-                with self.subTest(target=target), patch(f"dating_digest.__main__.{target}", **options):
+                with self.subTest(target=target), patch(f"dating_digest.io.{target}", **options):
                     with self.assertRaises(OSError):
                         write_json(path, {"status": "planned"})
                 self.assertEqual(list(path.parent.iterdir()), [])
@@ -68,7 +68,7 @@ class ConfigAndWriteTests(unittest.TestCase):
                 destination.write_text('{"winner": true}', encoding="utf-8")
                 link(staging, destination)
 
-            with patch("dating_digest.__main__.os.link", side_effect=concurrent_publish):
+            with patch("dating_digest.io.os.link", side_effect=concurrent_publish):
                 with self.assertRaises(FileExistsError):
                     write_json(path, {"status": "planned"})
             self.assertEqual(read_json(path), {"winner": True})

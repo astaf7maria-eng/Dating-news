@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import sqlite3
 from datetime import date, datetime, timezone
 from pathlib import Path
@@ -14,30 +13,11 @@ from uuid import uuid4
 from .domain.context import build_context_bundle, index_by_id, json_sha256
 from .domain.window import date_window
 from .discovery.plan import build_plan
+from .io import read_json, write_json
 from .orchestration.period import choose_period
 from .storage import archive_run
 
 CONFIG_NAMES = ("business_context", "editorial_policy", "pipeline", "companies", "sources", "queries", "golden_set")
-
-
-def read_json(path: Path) -> dict:
-    value = json.loads(path.read_text(encoding="utf-8-sig"))
-    if not isinstance(value, dict):
-        raise ValueError(f"Expected JSON object: {path}")
-    return value
-
-
-def write_json(path: Path, value: dict) -> None:
-    # Same-filesystem hard link publishes a complete file and cannot overwrite
-    # an existing destination, including one created by a concurrent process.
-    with TemporaryDirectory(prefix=".write-", dir=path.parent) as temporary:
-        staging = Path(temporary) / path.name
-        with staging.open("x", encoding="utf-8", newline="\n") as output:
-            json.dump(value, output, ensure_ascii=False, indent=2)
-            output.write("\n")
-            output.flush()
-            os.fsync(output.fileno())
-        os.link(staging, path)
 
 
 def validate_configs(configs: dict, schema_dir: Path = Path("schemas")) -> None:
