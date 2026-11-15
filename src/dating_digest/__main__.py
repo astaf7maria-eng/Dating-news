@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import sqlite3
 from datetime import date, datetime, timezone
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -14,6 +15,7 @@ from .domain.context import build_context_bundle, index_by_id, json_sha256
 from .domain.window import date_window
 from .discovery.plan import build_plan
 from .orchestration.period import choose_period
+from .storage import archive_run
 
 CONFIG_NAMES = ("business_context", "editorial_policy", "pipeline", "companies", "sources", "queries", "golden_set")
 
@@ -87,6 +89,9 @@ def validate_configs(configs: dict, schema_dir: Path = Path("schemas")) -> None:
             raise ValueError(f"Missing key media keywords or dating context: {source_id}")
     if "editorial_policy" not in configs:  # Legacy plans only supplied the catalog.
         return
+    storage = configs["pipeline"].get("storage", {})
+    if not isinstance(storage, dict) or not isinstance(storage.get("article_archive_dir", "article"), str) or not storage.get("article_archive_dir", "article").strip():
+        raise ValueError("storage.article_archive_dir must be a nonempty path string")
     policy = configs["editorial_policy"]
     sections = index_by_id(policy["sections"], "editorial section")
     event, digest = [read_json(schema_dir / f"{name}.schema.json") for name in ("event", "digest")]
@@ -116,7 +121,7 @@ def aware_timestamp(value: str) -> datetime:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Dating digest project scaffold")
+    parser = argparse.ArgumentParser(description="Dating digest: run planning and persistent article archive")
     commands = parser.add_subparsers(dest="command", required=True)
     init = commands.add_parser("init-run", help="Create a planned run; no network or publication")
     init.add_argument("--as-of", type=aware_timestamp, help="End of proposed last-week window; asks yes/no")
@@ -125,10 +130,21 @@ def main() -> None:
     init.add_argument("--data-dir", type=Path, default=Path("data"))
     plan = commands.add_parser("plan-search", help="Save a plan for a confirmed run; no network")
     plan.add_argument("--run-dir", type=Path, required=True)
+    archive = commands.add_parser("archive-articles", help="Archive staged articles by publication date, preserving existing files")
+    archive.add_argument("--run-dir", type=Path, required=True)
+    archive.add_argument("--archive-dir", type=Path, help="Persistent archive; defaults to the run setting or ./article")
     for command in (init, plan):
         command.add_argument("--config-dir", type=Path, default=Path("config"),
                              help="Config directory; plan-search uses it only for legacy runs")
     args = parser.parse_args()
+
+    if args.command == "archive-articles":
+        try:
+            result = archive_run(args.run_dir, args.archive_dir)
+        except (OSError, ValueError, KeyError, TypeError, sqlite3.Error) as exc:
+            parser.error(str(exc))
+        print(json.dumps({key: value for key, value in result.items() if key != "items"}, ensure_ascii=False, indent=2))
+        return
 
     if args.command == "plan-search":
         try:
@@ -184,6 +200,8 @@ def main() -> None:
             "window_confirmation": {"status": "confirmed", "method": selection, "confirmed_at": now.isoformat()},
             "status": "planned", "stages": {name: "planned" for name in ("discovery", "ingestion", "editorial", "review", "publishing")},
             "publication_enabled": False,
+            "article_storage": {"archive_dir": str(Path(snapshots["pipeline"].get("storage", {}).get("article_archive_dir", "article")).resolve()),
+                                "layout": "YYYY/MM/DD.MM.YY", "mode": "append_only_deduplicated"},
             "business_context": {"version": bundle["context_version"], "sha256": bundle["context_sha256"], "bundle": "context_bundle.json"},
             "config_sha256": {name: json_sha256(value) for name, value in snapshots.items()},
             "note": "Scaffold only; no collection, ranking, review or delivery has run.",
