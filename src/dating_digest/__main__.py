@@ -110,6 +110,7 @@ def main() -> None:
     init.add_argument("--data-dir", type=Path, default=Path("data"))
     plan = commands.add_parser("plan-search", help="Save a plan for a confirmed run; no network")
     plan.add_argument("--run-dir", type=Path, required=True)
+    plan.add_argument("--strategy", choices=("fast", "exhaustive"), default="fast")
     archive = commands.add_parser("archive-articles", help="Archive staged articles by publication date, preserving existing files")
     archive.add_argument("--run-dir", type=Path, required=True)
     archive.add_argument("--archive-dir", type=Path, help="Persistent archive; defaults to the run setting or ./article")
@@ -143,7 +144,8 @@ def main() -> None:
             else:
                 raise ValueError(f"Unsupported manifest version: {version}")
             validate_configs(snapshots)
-            result = build_plan(snapshots["companies"], snapshots["sources"], snapshots["queries"], manifest, bundle)
+            result = build_plan(snapshots["companies"], snapshots["sources"], snapshots["queries"], manifest, bundle,
+                                strategy=args.strategy)
             result["catalog_origin"] = "run_snapshot" if version == "0.5" else "live_legacy"
             write_json(args.run_dir / "search_plan.json", result)
         except (OSError, ValueError, KeyError, TypeError) as exc:
@@ -151,6 +153,9 @@ def main() -> None:
         print(f"Saved {result['query_count']} coverage queries in {result['task_count']} search tasks "
               f"({result['language_request_count']} separate language requests before provider optimization); "
               "no search has run.")
+        if result.get("strategy") == "fast":
+            print(f"First pass: {result['initial_query_count']} short queries plus "
+                  f"{len(result['source_indexes'])} source indexes; remaining queries only for measured gaps.")
         if result["catalog_origin"] == "live_legacy":
             print("Legacy run uses the current catalog. Create a new run to freeze all inputs.")
         if bundle is None:

@@ -10,6 +10,7 @@
     {
       "id": "tinder_product",
       "example_number": 1,
+      "title": "Tinder тестирует «упущенные встречи» и развивает групповые знакомства",
       "company_ids": [
         "tinder",
         "match_group"
@@ -25,6 +26,7 @@
     {
       "id": "hinge_pricing",
       "example_number": 2,
+      "title": "Hinge тестирует более дешёвую подписку",
       "company_ids": [
         "hinge"
       ],
@@ -39,6 +41,7 @@
     {
       "id": "grindr_edge",
       "example_number": 3,
+      "title": "Grindr Edge: AI-подписка за $120 в месяц с ограниченным числом мест",
       "company_ids": [
         "grindr",
         "freddie"
@@ -56,6 +59,7 @@
     {
       "id": "dating_malware",
       "example_number": 4,
+      "title": "МВД: мошенники через сайты знакомств убеждают пользователей устанавливать вредоносные приложения",
       "company_ids": [],
       "section_ids": [
         "trust_safety"
@@ -68,6 +72,7 @@
     {
       "id": "match_ai_agents",
       "example_number": 5,
+      "title": "Match Group запрещает AI-агентов в Tinder и Hinge",
       "company_ids": [
         "match_group",
         "tinder",
@@ -84,6 +89,7 @@
     {
       "id": "liangpei_refund",
       "example_number": 6,
+      "title": "Liangpei AI вернёт стоимость подписки, если пользователь не вступит в брак за три года",
       "company_ids": [
         "liangpei_ai"
       ],
@@ -102,6 +108,7 @@
     {
       "id": "pure_model",
       "example_number": 7,
+      "title": "Pure: анонимные объявления вместо свайпов и годовой темп выручки $220 млн",
       "company_ids": [
         "pure"
       ],
@@ -118,6 +125,7 @@
     {
       "id": "match_results",
       "example_number": 8,
+      "title": "Match Group, Q3 2026: общая выручка снижается, Hinge растёт",
       "company_ids": [
         "match_group",
         "hinge"
@@ -133,6 +141,7 @@
     {
       "id": "bumble_business",
       "example_number": 9,
+      "title": "Bumble, Q3 2026: падение выручки и подготовка к уходу с биржи",
       "company_ids": [
         "bumble",
         "ithaca"
@@ -149,6 +158,7 @@
     {
       "id": "world_survey",
       "example_number": 10,
+      "title": "Опрос World и Harris Poll: 81% одиноких охотнее пользовались бы дейтингом с проверенными профилями",
       "company_ids": [
         "world",
         "harris_poll",

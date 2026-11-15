@@ -12,13 +12,13 @@ $env:PYTHONPATH = Join-Path (Get-Location) 'src'
 $env:PYTHONIOENCODING = 'utf-8'
 python -m dating_digest init-run --start-date 2026-11-01 --end-date 2026-11-14
 # Подставить созданную папку запуска вместо <run_id>:
-python -m dating_digest plan-search --run-dir data/runs/<run_id>
+python -m dating_digest plan-search --strategy fast --run-dir data/runs/<run_id>
 # Передать агенту common.md + collect-news-fast.md и папку запуска.
 # После подготовки Article JSON агент выполняет:
 python -m dating_digest archive-articles --run-dir data/runs/<run_id>
 ```
 
-Для сбора нужен только [рабочий промпт](prompts/collect-news-fast.md), [общие правила](prompts/common.md) и артефакты запуска. Остальные документы читать по необходимости. Даты включаются целиком по Москве; без явного периода `init-run` предлагает неделю и ждёт подтверждения. Снимки конфигов проверяются по SHA-256; план сам не выполняет поиск.
+Для сбора нужен только [рабочий промпт](prompts/collect-news-fast.md), [общие правила](prompts/common.md) и артефакты запуска. Быстрый план отделяет 38 запросов первого прохода от уточнений по пробелам; цели покрытия сохраняются. Сессионные примитивы учитывают дубли и бюджет, но автономного поискового исполнителя нет. `--strategy exhaustive` оставлен для локального сравнения со старым планом. Остальные документы читать по необходимости. Даты включаются целиком по Москве; без явного периода `init-run` предлагает неделю и ждёт подтверждения. Снимки конфигов проверяются по SHA-256; план сам не выполняет поиск.
 
 Результат: `article/YYYY/MM/DD.MM.YY/<article_id>.json`, неизвестные даты — `_undated`. Общий архив переживает новые прогоны: дубли ID/URL/текста пропускаются, изменения сохраняются отдельными версиями. Квитанция и журнал остаются в `data/runs/<run_id>/`. [Правила архива](docs/article-archive.md).
 
@@ -32,9 +32,9 @@ python -m dating_digest archive-articles --run-dir data/runs/<run_id>
 | Исторические примеры и новые кандидаты | [golden_set](config/golden_set.json), [discovery_candidates](config/discovery_candidates.json) |
 | Форматы и проверка результата | [schemas](schemas/), [приёмка](docs/acceptance.md) |
 | Технические контракты и оставшаяся работа | [архитектура](docs/architecture.md), [план](docs/implementation-plan.md) |
-| Результаты прогона и причины ускорения | [отчёт](docs/collection-status.md), [задание на оптимизацию](docs/optimize-search-codex-prompt.md) |
+| Результаты прогона и проверка ускорения | [прошлый отчёт](docs/collection-status.md), [измерения оптимизации](docs/collection-optimization.md), [задание](docs/optimize-search-codex-prompt.md) |
 
-Проверка: `python -m unittest discover -s tests -v`. JSON I/O общий, атомарный и в UTF-8; без явного `replace=True` существующие файлы не заменяются. Требуется поддержка hard links (например, NTFS). Секреты — по [.env.example](.env.example); `article/`, `data/`, `.tmp/` и секреты исключены из Git. Старый [аудит](docs/audit.md) описывает состояние до текущих изменений.
+Проверка: `python -m unittest discover -s tests -v`. JSON I/O общий, атомарный и в UTF-8; без явного `replace=True` существующие файлы не заменяются. Требуется поддержка hard links (например, NTFS). Секреты — по [.env.example](.env.example); `article/`, `data/`, `.tmp/` и секреты исключены из Git. Текущие исправления и оставшиеся вопросы — в [аудите от 15.11.2026](docs/audit-2026-11-15.md); [первый аудит](docs/audit.md) сохранён как история.
 
 ## Контекст Lovito: 10 ключевых so what для дайджеста
 

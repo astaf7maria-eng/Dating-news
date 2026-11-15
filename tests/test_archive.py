@@ -154,18 +154,55 @@ class ArchiveTests(unittest.TestCase):
         self.assertEqual(self.archive.save(article())["action"], "duplicate")
         self.assertEqual(len(self.files()), 1)
 
+    def test_invalid_run_index_is_rejected_before_archive_or_manifest_changes(self):
+        run = self.root / 'runs' / 'invalid-index'
+        (run / 'articles').mkdir(parents=True)
+        manifest = run / 'manifest.json'
+        manifest.write_text(json.dumps({'run_id': 'invalid-index'}), encoding='utf-8')
+        (run / 'articles/first.json').write_text(json.dumps(article()), encoding='utf-8')
+        before = manifest.read_bytes()
+        for raw in ('{', '{}', '[null]', '[{"article_id": []}]'):
+            with self.subTest(index=raw):
+                (run / 'article_index.json').write_text(raw, encoding='utf-8')
+                with self.assertRaises(ValueError):
+                    archive_run(run, self.archive.root)
+                self.assertFalse(self.archive.root.exists())
+                self.assertFalse((run / 'article_archive.json').exists())
+                self.assertEqual(manifest.read_bytes(), before)
+
+    def test_duplicate_staged_article_ids_are_rejected_before_any_archive_write(self):
+        run = self.root / 'runs' / 'duplicate-ids'
+        (run / 'articles').mkdir(parents=True)
+        (run / 'manifest.json').write_text(json.dumps({'run_id': 'duplicate-ids'}), encoding='utf-8')
+        for name, value in (('one', article()), ('two', article(text='Changed text'))):
+            (run / 'articles' / f'{name}.json').write_text(json.dumps(value), encoding='utf-8')
+        with self.assertRaisesRegex(ValueError, 'Duplicate staged article_id'):
+            archive_run(run, self.archive.root)
+        self.assertFalse(self.archive.root.exists())
+
+    def test_archive_cannot_contain_the_run_and_import_its_staged_files(self):
+        run = self.root / 'runs' / 'nested'
+        run.mkdir(parents=True)
+        (run / 'manifest.json').write_text(json.dumps({'run_id': 'nested'}), encoding='utf-8')
+        with self.assertRaisesRegex(ValueError, 'overlap'):
+            archive_run(run, self.root)
+        self.assertFalse((self.root / '.archive.sqlite3').exists())
+
     def test_cli_two_runs_share_archive_and_link_to_existing_article(self):
         for name in ("run1", "run2"):
             run = self.root / "runs" / name
             (run / "articles").mkdir(parents=True)
             (run / "manifest.json").write_text(json.dumps({"run_id":name}),encoding="utf-8")
             (run / "articles/first.json").write_text(json.dumps(article(),ensure_ascii=False),encoding="utf-8")
+            (run / "article_index.json").write_text(json.dumps([{"article_id": "first"}]), encoding="utf-8")
             result = subprocess.run([sys.executable,"-m","dating_digest","archive-articles","--run-dir",str(run),"--archive-dir",str(self.archive.root)],cwd=ROOT,env={**os.environ,"PYTHONPATH":str(ROOT/"src"),"PYTHONIOENCODING":"utf-8"},capture_output=True,text=True,encoding="utf-8")
             self.assertEqual(result.returncode,0,result.stderr)
             report = json.loads((run/"article_archive.json").read_text(encoding="utf-8"))
             expected = "created" if name == "run1" else "duplicate"
             self.assertEqual(report["actions"],{expected:1})
             self.assertTrue((run/report["items"][0]["run_relative_path"]).resolve().is_file())
+            index = json.loads((run / 'article_index.json').read_text(encoding='utf-8'))
+            self.assertEqual(index[0]['archive_path'], report['items'][0]['run_relative_path'])
         self.assertEqual(len(self.files()),1)
         with self.assertRaises(ValueError):
             archive_run(self.root/"runs/run2",self.root/"runs/run2/archive")

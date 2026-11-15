@@ -220,15 +220,29 @@ def archive_run(run_dir: Path | str, archive_dir: Path | str | None = None) -> d
     if archive_dir is None:
         archive_dir = manifest.get("article_storage", {}).get("archive_dir", "article")
     archive = ArticleArchive(archive_dir)
-    if archive.root.is_relative_to(run_dir):
-        raise ValueError("Persistent article archive must be outside the individual run directory")
+    if archive.root.is_relative_to(run_dir) or run_dir.is_relative_to(archive.root):
+        raise ValueError("Persistent article archive must not overlap the individual run directory")
     paths = sorted((run_dir / "articles").glob("*.json"))
     if not paths:
         raise ValueError(f"No staged Article JSON files in {run_dir / 'articles'}")
     # Validate the whole input before publishing the first new archive entry.
     prepared = [(p, _read(p)) for p in paths]
+    article_ids = set()
     for _, article in prepared:
         _prepare(article)
+        if article["article_id"] in article_ids:
+            raise ValueError(f"Duplicate staged article_id: {article['article_id']}")
+        article_ids.add(article["article_id"])
+    index_path = run_dir / "article_index.json"
+    index = None
+    if index_path.exists():
+        index = json.loads(index_path.read_text(encoding="utf-8-sig"))
+        if not isinstance(index, list) or any(
+            not isinstance(entry, dict)
+            or "article_id" in entry and not isinstance(entry["article_id"], str)
+            for entry in index
+        ):
+            raise ValueError("article_index.json must be a list of objects with string article IDs")
     items = []
     for path, article in prepared:
         result = archive.save(article, run_id=manifest["run_id"], source_path=str(path))
@@ -241,9 +255,7 @@ def archive_run(run_dir: Path | str, archive_dir: Path | str | None = None) -> d
     manifest["article_storage"] = {"archive_dir": str(archive.root), "layout": "YYYY/MM/DD.MM.YY",
                                    "mode": "append_only_deduplicated", "receipt": "article_archive.json"}
     _publish(run_dir / "manifest.json", manifest, replace=True)
-    index_path = run_dir / "article_index.json"
-    if index_path.exists():
-        index = json.loads(index_path.read_text(encoding="utf-8-sig"))
+    if index is not None:
         by_id = {x["article_id"]: x for x in items}
         for entry in index:
             if entry.get("article_id") in by_id:

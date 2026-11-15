@@ -26,7 +26,7 @@ class DiscoveryTests(unittest.TestCase):
         }
 
     def plan(self, catalog=None):
-        return build_plan(catalog or self.catalog, self.sources, self.rules, self.manifest)
+        return build_plan(catalog or self.catalog, self.sources, self.rules, self.manifest, strategy="exhaustive")
 
     def test_required_five_and_all_golden_companies_get_ru_en_baselines(self):
         required = set(self.catalog["required_always_company_ids"]
@@ -139,7 +139,7 @@ class DiscoveryTests(unittest.TestCase):
                 self.assertIn('"' + word + '"', query["query"])
         rules = copy.deepcopy(self.rules)
         rules["discovery"]["enabled"] = False
-        plan = build_plan(self.catalog, self.sources, rules, self.manifest)
+        plan = build_plan(self.catalog, self.sources, rules, self.manifest, strategy="exhaustive")
         self.assertEqual(queries, [q for q in plan["queries"] if q["lane"] == "media_review"])
 
     def test_invalid_key_media_policy_is_rejected_before_run(self):
@@ -167,7 +167,7 @@ class DiscoveryTests(unittest.TestCase):
         original_id = pattern["id"]
         pattern["id"] = "same_words_different_model"
         rules["discovery"]["business_model_patterns"].append(pattern)
-        plan = build_plan(self.catalog, self.sources, rules, self.manifest)
+        plan = build_plan(self.catalog, self.sources, rules, self.manifest, strategy="exhaustive")
         original = [q for q in plan["queries"] if q["model_id"] == original_id]
         duplicate = [q for q in plan["queries"] if q["model_id"] == pattern["id"]]
         self.assertEqual([q["query"] for q in original], [q["query"] for q in duplicate])
