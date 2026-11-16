@@ -42,11 +42,17 @@
           "published_at": {"type": "string", "format": "date-time"},
           "event_id": {"type": "string"},
           "headline": {"type": "string", "minLength": 1},
+          "company": {"type": "string", "minLength": 1},
+          "original_title": {"type": "string", "minLength": 1},
+          "original_url": {"type": "string", "format": "uri"},
           "summary": {"type": "string", "minLength": 1},
           "so_what": {
             "type": "object",
             "required": ["market_signal", "context_link", "context_refs"],
             "properties": {
+              "text": {"type": "string", "minLength": 1, "description": "Видимые 1–2 предложения для Mattermost."},
+              "competitor_logic": {"type": "string", "minLength": 1, "description": "Бизнес-цель, пользовательская проблема или логика рыночной угрозы, с атрибуцией интерпретации."},
+              "related_event_ids": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
               "market_signal": {"type": "string", "minLength": 1},
               "context_link": {"type": "string", "minLength": 1},
               "hypothesis_or_action": {"type": ["string", "null"], "minLength": 1, "description": "Необязательно: конкретное обоснованное действие или гипотеза; иначе пропустить или null."},
@@ -75,5 +81,5 @@
   "$defs": {
     "section_id": {"enum": ["features", "monetization", "trust_safety", "ai", "new_models", "business", "marketing"]}
   },
-  "$comment": "Проверять отдельно: ровно 7 уникальных разделов, соответствие статусов составу items, совпадение окна с подтверждённым периодом в manifest, даты источников, непрерывность rank и display_order, отсутствие повторов. Произвольная длительность периода допустима. rank — приоритет, display_order — порядок в посте после группировки."
+  "$comment": "Проверять отдельно: ровно 7 уникальных разделов, соответствие статусов составу items, совпадение окна с подтверждённым периодом в manifest, даты источников, непрерывность rank и display_order, отсутствие повторов. Произвольная длительность периода допустима. В Mattermost rank и display_order совпадают с порядком приоритета."
 }

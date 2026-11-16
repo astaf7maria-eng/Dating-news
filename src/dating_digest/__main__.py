@@ -203,6 +203,15 @@ def main() -> None:
     ):
         qa = commands.add_parser(command, help=help_text)
         qa.add_argument("--run-dir", type=Path, required=True)
+    editorial = commands.add_parser("prepare-editorial", help="Prepare the four sequential session-authored editorial steps")
+    editorial.add_argument("--run-dir", type=Path, required=True)
+    editorial.add_argument("--verified-subset-reason", help="Explicitly requested draft from eligible articles with limited coverage")
+    editorial.add_argument("--editorial-policy", type=Path, help="Explicit editorial policy revision for this preparation; frozen research inputs are preserved")
+    check = commands.add_parser("check-editorial", help="Validate an editorial step and every preceding step")
+    check.add_argument("--run-dir", type=Path, required=True)
+    check.add_argument("--step", choices=("analysis", "selection", "summaries", "digest"), required=True)
+    render = commands.add_parser("render-digest", help="Render a revision-reviewed local Mattermost Markdown post")
+    render.add_argument("--run-dir", type=Path, required=True)
     extract = commands.add_parser("extract-page", help="Extract saved UTF-8 HTML into a staged Article; no network")
     extract.add_argument("--html", type=Path, required=True)
     extract.add_argument("--metadata", type=Path, required=True, help="Verified url, source_id, dates and company_ids as JSON")
@@ -211,6 +220,21 @@ def main() -> None:
     init.add_argument("--config-dir", type=Path, default=Path("config"),
                       help="Configuration directory to freeze in the new run")
     args = parser.parse_args()
+
+    if args.command in {"prepare-editorial", "check-editorial", "render-digest"}:
+        try:
+            from .editorial import check_editorial, prepare_editorial, render_digest
+            if args.command == "prepare-editorial":
+                result = prepare_editorial(args.run_dir, verified_subset_reason=args.verified_subset_reason,
+                                           editorial_policy_path=args.editorial_policy)
+            elif args.command == "check-editorial":
+                result = check_editorial(args.run_dir, args.step)
+            else:
+                result = render_digest(args.run_dir)
+        except (OSError, ValueError, KeyError, TypeError, ImportError) as exc:
+            parser.error(str(exc))
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        return
 
     if args.command in {"qa-research", "check-research-qa"}:
         try:

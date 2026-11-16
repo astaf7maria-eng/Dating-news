@@ -226,35 +226,36 @@ def prepare_research_qa(run_dir: Path, project_dir: Path = Path(".")) -> dict:
     return report
 
 
-def check_research_qa(run_dir: Path, project_dir: Path = Path(".")) -> dict:
-    """Fail closed on stale inputs, incomplete assessment or unresolved findings."""
+def check_research_qa(run_dir: Path, project_dir: Path = Path("."), *, verified_subset: bool = False) -> dict:
+    """Validate research, optionally returning eligible articles for a limited draft."""
     run_dir, project_dir = Path(run_dir), Path(project_dir)
     current = audit_research(run_dir, project_dir)
     saved = read_json(run_dir / "research_audit.json")
     review = read_json(run_dir / "research_review.json")
-    errors = list(_validator(project_dir / "schemas/research-review.schema.json").iter_errors(review))
-    if errors:
-        raise ValueError("Invalid research_review.json: " + errors[0].message)
+    error = next(_validator(project_dir / "schemas/research-review.schema.json").iter_errors(review), None)
+    if error:
+        raise ValueError("Invalid research_review.json: " + error.message)
     if saved != current or review["input_sha256"] != current["input_sha256"] or review["run_id"] != current["run_id"]:
         raise ValueError("Research QA is stale; rerun qa-research and source-based assessment")
     if current["automatic_status"] != "checks_passed":
         raise ValueError("Research QA has blocking local findings; see research_audit.json")
-    if review["verdict"] != "passed" or any(f["severity"] == "blocking" for f in review["findings"]):
-        raise ValueError("Research assessment is not passed or contains blocking findings")
-    if set(review["checks"]) != set(CHECKS) or any(row["status"] != "completed" for row in review["checks"].values()):
-        raise ValueError("Every research check must be completed")
+    if not verified_subset:
+        if review["verdict"] != "passed" or any(f["severity"] == "blocking" for f in review["findings"]):
+            raise ValueError("Research assessment is not passed or contains blocking findings")
+        if set(review["checks"]) != set(CHECKS) or any(row["status"] != "completed" for row in review["checks"].values()):
+            raise ValueError("Every research check must be completed")
     rows = review["articles"]
     by_path = {row["path"]: row for row in rows}
     if len(rows) != len(by_path) or set(by_path) != {a["path"] for a in current["articles"]}:
         raise ValueError("Assessment must cover every staged Article exactly once")
     for article in current["articles"]:
         row = by_path[article["path"]]
-        if row["article_id"] != article["article_id"] or row["disposition"] == "needs_review":
+        if row["article_id"] != article["article_id"] or (not verified_subset and row["disposition"] == "needs_review"):
             raise ValueError("Unresolved or mismatched Article: " + article["path"])
         if row["disposition"] == "eligible" and INELIGIBLE.intersection(article["attention"]):
             raise ValueError("Ineligible date/text must be corrected or excluded: " + article["path"])
     coverage = review["coverage"]
-    if (len(coverage) != len({r["target"] for r in coverage})
+    if not verified_subset and (len(coverage) != len({r["target"] for r in coverage})
             or {r["target"] for r in coverage} != set(current["coverage_targets"])
             or any(r["status"] not in {"checked", "no_findings"} for r in coverage)):
         raise ValueError("Coverage has missing, duplicate or unfinished targets")
@@ -277,8 +278,11 @@ def check_research_qa(run_dir: Path, project_dir: Path = Path(".")) -> dict:
                 or row.get("status") in {"planned", "error", "failed", "not_checked", "inflight", "budget_not_started"}):
             raise ValueError("Evidence is not a completed source/search observation: " + ref)
 
-    for row in [*rows, *coverage, *review["checks"].values()]:
-        for ref in row["evidence_refs"]:
-            observation(ref)
-    return dict(run_id=current["run_id"], input_sha256=current["input_sha256"], verdict="passed",
+    evidence_rows = ([row for row in rows if row["disposition"] == "eligible"] if verified_subset
+                     else [*rows, *coverage, *review["checks"].values()])
+    references = {ref for row in evidence_rows for ref in row["evidence_refs"]}
+    for ref in sorted(references):
+        observation(ref)
+    return dict(run_id=current["run_id"], input_sha256=current["input_sha256"],
+                verdict="verified_subset" if verified_subset else "passed",
                 eligible_article_paths=[row["path"] for row in rows if row["disposition"] == "eligible"])

@@ -80,7 +80,7 @@ class ContextTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "manifest"):
             build_plan(catalog, sources, rules, manifest, self.bundle)
 
-    def test_context_is_saved_for_so_what_without_changing_search(self):
+    def test_context_is_saved_for_editorial_without_changing_search(self):
         config = ROOT / "config"
         catalog, sources, rules = [read(config / f"{name}.json") for name in ("companies", "sources", "queries")]
         manifest = {
@@ -99,7 +99,7 @@ class ContextTests(unittest.TestCase):
         self.assertNotIn("business_context", plan["config_snapshot"])
         self.assertNotIn("context_warnings", plan)
         self.assertEqual(plan["context_sha256"], self.bundle["context_sha256"])
-        self.assertEqual(plan["business_context_usage"], "so_what_only_no_revalidation")
+        self.assertEqual(plan["business_context_usage"], "editorial_only_no_revalidation")
 
     def test_unused_context_search_fields_do_not_change_requests(self):
         config = ROOT / "config"

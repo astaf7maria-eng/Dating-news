@@ -7,6 +7,8 @@
     "schema_version": {"const": "0.1"},
     "digest_id": {"type": "string"},
     "revision": {"type": "integer", "minimum": 1},
+    "digest_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "editorial_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
     "result": {"enum": ["passed", "failed"]},
     "checked_at": {"type": "string", "format": "date-time"},
     "issues": {

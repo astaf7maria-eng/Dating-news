@@ -6,7 +6,10 @@
   "properties": {
     "schema_version": {"const": "0.4"},
     "event_id": {"type": "string", "minLength": 1},
-    "company_ids": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+    "company_ids": {"type": "array", "items": {"type": "string"}, "description": "Для внешнего предупреждения без компании допустим пустой список."},
+    "primary_article_id": {"type": "string", "minLength": 1},
+    "mechanism": {"type": "string", "minLength": 1},
+    "possible_consequences": {"type": "array", "items": {"type": "string"}, "description": "Гипотезы аналитика, отделённые от подтверждённых facts."},
     "headline": {"type": "string", "minLength": 1, "description": "Русский заголовок карточки события, сформированный при смысловой обработке Article. Event JSON сохраняется в UTF-8."},
     "section_id": {"enum": ["features", "monetization", "trust_safety", "ai", "new_models", "business", "marketing"]},
     "event_kind": {"enum": ["product_change", "product_policy", "threat_signal", "business_event", "marketing_event"]},
@@ -71,5 +74,5 @@
       }]
     }
   },
-  "$comment": "Контекст Lovito используется только для so what после отбора. При отборе context_assessment = null; оценки и допуск от него не зависят. Поля context_assessment и контекстные метаданные ranking сохранены для чтения прежних артефактов. В новом выпуске context_refs формируются непосредственно из context_bundle.json; decision_support требует непустого question_ids, market_watch допускает пустые ID при конкретном обосновании значимости."
+  "$comment": "Анализ источника сохраняет context_assessment = null. При стратегическом отборе context_bundle используется в ranking.json strategic_assessment и в so what. Поля контекстных метаданных ranking сохранены для чтения прежних артефактов. decision_support требует question_ids, market_watch допускает пустые ID при обосновании рыночной значимости."
 }
