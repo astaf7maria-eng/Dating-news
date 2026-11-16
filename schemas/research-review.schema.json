@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Post-collection research assessment",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "run_id", "input_sha256", "verdict", "summary", "checks", "articles", "coverage", "findings"],
+  "properties": {
+    "schema_version": {"const": "0.1"},
+    "run_id": {"type": "string", "minLength": 1},
+    "input_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "verdict": {"enum": ["passed", "needs_revision"]},
+    "summary": {"type": "string", "minLength": 1},
+    "checks": {
+      "type": "object",
+      "additionalProperties": {"$ref": "#/$defs/check"},
+      "required": ["coverage", "dates", "sources", "filters", "extraction", "event_facts", "missed_news"]
+    },
+    "articles": {
+      "type": "array",
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["path", "article_id", "disposition", "reason", "evidence_refs"],
+        "properties": {
+          "path": {"type": "string", "minLength": 1},
+          "article_id": {"type": "string", "minLength": 1},
+          "disposition": {"enum": ["eligible", "excluded", "needs_review"]},
+          "reason": {"type": "string", "minLength": 1},
+          "evidence_refs": {"$ref": "#/$defs/refs"}
+        }
+      }
+    },
+    "coverage": {
+      "type": "array",
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["target", "status", "basis", "evidence_refs"],
+        "properties": {
+          "target": {"type": "string", "minLength": 1},
+          "status": {"enum": ["checked", "no_findings", "error", "not_checked"]},
+          "basis": {"type": "string", "minLength": 1},
+          "evidence_refs": {"$ref": "#/$defs/refs"}
+        }
+      }
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["severity", "path", "issue", "fix"],
+        "properties": {
+          "severity": {"enum": ["blocking", "warning"]},
+          "path": {"type": "string", "minLength": 1},
+          "issue": {"type": "string", "minLength": 1},
+          "fix": {"type": "string", "minLength": 1}
+        }
+      }
+    }
+  },
+  "$defs": {
+    "refs": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "check": {
+      "type": "object", "additionalProperties": false,
+      "required": ["status", "summary", "evidence_refs"],
+      "properties": {
+        "status": {"enum": ["completed", "incomplete"]},
+        "summary": {"type": "string", "minLength": 1},
+        "evidence_refs": {"$ref": "#/$defs/refs"}
+      }
+    }
+  }
+}

@@ -197,6 +197,12 @@ def main() -> None:
     archive = commands.add_parser("archive-articles", help="Archive staged articles by publication date, preserving existing files")
     archive.add_argument("--run-dir", type=Path, required=True)
     archive.add_argument("--archive-dir", type=Path, help="Persistent archive; defaults to the run setting or ./article")
+    for command, help_text in (
+        ("qa-research", "Audit saved articles and prepare research_audit.json; no network or semantic approval"),
+        ("check-research-qa", "Verify source-based research_review.json against current inputs before selection"),
+    ):
+        qa = commands.add_parser(command, help=help_text)
+        qa.add_argument("--run-dir", type=Path, required=True)
     extract = commands.add_parser("extract-page", help="Extract saved UTF-8 HTML into a staged Article; no network")
     extract.add_argument("--html", type=Path, required=True)
     extract.add_argument("--metadata", type=Path, required=True, help="Verified url, source_id, dates and company_ids as JSON")
@@ -205,6 +211,22 @@ def main() -> None:
     init.add_argument("--config-dir", type=Path, default=Path("config"),
                       help="Configuration directory to freeze in the new run")
     args = parser.parse_args()
+
+    if args.command in {"qa-research", "check-research-qa"}:
+        try:
+            from .research_qa import prepare_research_qa, check_research_qa
+            if args.command == "qa-research":
+                result = prepare_research_qa(args.run_dir)
+                print(json.dumps({key: result[key] for key in
+                                  ("run_id", "input_sha256", "automatic_status", "semantic_status")},
+                                 ensure_ascii=False, indent=2))
+                if result["automatic_status"] == "blocked":
+                    parser.exit(1, "Local checks blocked; see research_audit.json\n")
+            else:
+                print(json.dumps(check_research_qa(args.run_dir), ensure_ascii=False, indent=2))
+        except (OSError, ValueError, KeyError, TypeError, ImportError) as exc:
+            parser.error(str(exc))
+        return
 
     if args.command == "extract-page":
         try:
@@ -272,7 +294,7 @@ def main() -> None:
             "timezone": "Europe/Moscow", "window_start": start.isoformat(), "window_end_exclusive": end.isoformat(),
             "window_days": (end - start).total_seconds() / 86400,
             "window_confirmation": {"status": "confirmed", "method": selection, "confirmed_at": now.isoformat()},
-            "status": "planned", "stages": {name: "planned" for name in ("discovery", "ingestion", "editorial", "review", "publishing")},
+            "status": "planned", "stages": {name: "planned" for name in ("discovery", "ingestion", "research_qa", "editorial", "review", "publishing")},
             "publication_enabled": False,
             "article_storage": {"archive_dir": str(Path(snapshots["pipeline"].get("storage", {}).get("article_archive_dir", "article")).resolve()),
                                 "layout": "YYYY/MM/DD.MM.YY", "mode": "append_only_deduplicated"},
