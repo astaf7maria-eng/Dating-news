@@ -1,4 +1,4 @@
-"""Local scaffold: select a period and save a search plan without network calls."""
+"""Local planning, saved-HTML extraction and archiving without network calls."""
 
 from __future__ import annotations
 
@@ -203,10 +203,28 @@ def main() -> None:
     archive = commands.add_parser("archive-articles", help="Archive staged articles by publication date, preserving existing files")
     archive.add_argument("--run-dir", type=Path, required=True)
     archive.add_argument("--archive-dir", type=Path, help="Persistent archive; defaults to the run setting or ./article")
+    extract = commands.add_parser("extract-page", help="Extract saved UTF-8 HTML into a staged Article; no network")
+    extract.add_argument("--html", type=Path, required=True)
+    extract.add_argument("--metadata", type=Path, required=True, help="Verified url, source_id, dates and company_ids as JSON")
+    extract.add_argument("--output", type=Path, required=True, help="New Article JSON, normally run_dir/articles/<id>.json")
+    extract.add_argument("--tags", nargs="+", choices=("features", "monetization", "trust_safety", "ai", "new_models", "business", "marketing"))
     for command in (init, plan):
         command.add_argument("--config-dir", type=Path, default=Path("config"),
                              help="Config directory; plan-search uses it only for legacy runs")
     args = parser.parse_args()
+
+    if args.command == "extract-page":
+        try:
+            from .ingestion import extract_article
+            article = extract_article(args.html.read_text(encoding="utf-8-sig"),
+                                      read_json(args.metadata), tags=args.tags)
+            article["raw_path"] = str(args.html)
+            write_json(args.output, article)
+        except (OSError, ValueError, KeyError, TypeError, ImportError) as exc:
+            parser.error(str(exc))
+        print(f"Saved Article: {args.output}; {article['extraction_status']}; "
+              f"{len(article['text'] or '')} characters")
+        return
 
     if args.command == "archive-articles":
         try:

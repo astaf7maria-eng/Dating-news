@@ -9,19 +9,30 @@
     "source_id": {"type": "string", "minLength": 1},
     "url": {"type": "string", "format": "uri"},
     "canonical_url": {"type": "string", "format": "uri"},
-    "title": {"type": "string", "minLength": 1},
-    "language": {"type": "string"},
+    "title": {"type": "string", "minLength": 1, "description": "Заголовок публикации на языке оригинала; не переводить для русской карточки события."},
+    "language": {"type": "string", "description": "Язык исходного текста статьи, независимо от языка карточки Event."},
     "published_at": {"type": ["string", "null"], "format": "date-time"},
     "date_precision": {"enum": ["timestamp", "day", "unknown"]},
     "published_date_raw": {"type": ["string", "null"]},
     "event_date": {"type": ["string", "null"], "format": "date"},
     "collected_at": {"type": "string", "format": "date-time"},
-    "text": {"type": ["string", "null"]},
+    "text": {"type": ["string", "null"], "description": "Очищенный исходный текст на языке оригинала. Article JSON сохраняется в UTF-8; русский пересказ хранится отдельно в Event."},
     "text_sha256": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"},
     "extraction_status": {"enum": ["full", "partial", "unavailable", "failed"]},
     "extraction_method": {"type": "string"},
     "extraction_error": {"type": ["string", "null"]},
-    "company_ids": {"type": "array", "items": {"type": "string"}, "uniqueItems": true}
+    "company_ids": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "tags": {"type": "array", "items": {"enum": ["features", "monetization", "trust_safety", "ai", "new_models", "business", "marketing"]}, "uniqueItems": true},
+    "extraction_diagnostics": {
+      "type": "object",
+      "properties": {
+        "title_source": {"type": "string"},
+        "quality_issues": {"type": "array", "items": {"type": "string"}},
+        "duplicate_chars_removed": {"type": "integer", "minimum": 0},
+        "unselected_paragraph_count": {"type": "integer", "minimum": 0},
+        "paragraph_count": {"type": "integer", "minimum": 0}
+      }
+    }
   },
   "$comment": "При точности day полночь — техническое представление, а не известное время публикации. Cross-field проверки текста, хеша и статуса выполняет domain."
 }

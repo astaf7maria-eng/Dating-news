@@ -7,7 +7,7 @@
     "schema_version": {"const": "0.4"},
     "event_id": {"type": "string", "minLength": 1},
     "company_ids": {"type": "array", "minItems": 1, "items": {"type": "string"}},
-    "headline": {"type": "string", "minLength": 1},
+    "headline": {"type": "string", "minLength": 1, "description": "Русский заголовок карточки события, сформированный при смысловой обработке Article. Event JSON сохраняется в UTF-8."},
     "section_id": {"enum": ["features", "monetization", "trust_safety", "ai", "new_models", "business", "marketing"]},
     "event_kind": {"enum": ["product_change", "product_policy", "threat_signal", "business_event", "marketing_event"]},
     "launch_stage": {"enum": ["announced", "pilot", "beta", "launched", "expanded", "rumor", "unknown", "not_applicable"]},
@@ -20,9 +20,9 @@
         "type": "object",
         "required": ["claim", "article_id", "evidence_quote"],
         "properties": {
-          "claim": {"type": "string"},
+          "claim": {"type": "string", "description": "Факт по-русски с сохранением условий, чисел, стадии и оговорок исходной публикации."},
           "article_id": {"type": "string"},
-          "evidence_quote": {"type": "string", "minLength": 1}
+          "evidence_quote": {"type": "string", "minLength": 1, "description": "Точная цитата на языке оригинала из Article, указанного в article_id; не заменять русским переводом."}
         }
       }
     },
