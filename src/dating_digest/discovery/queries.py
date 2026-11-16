@@ -55,7 +55,7 @@ def build_followup_query(plan: dict, *, language: str, intent: str,
     context = rules["external_search"]["contexts"].get(language)
     if not context:
         raise ValueError(f"Missing dating context: {language}")
-    excluded_domains = set()
+    excluded_domains = set(rules["retrieval_policy"].get("excluded_domains", []))
     ids = []
     if company_id is not None:
         company = next((item for item in catalog["companies"]

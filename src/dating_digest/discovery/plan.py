@@ -79,6 +79,12 @@ def build_plan(catalog: dict, sources: dict, rules: dict, manifest: dict,
     def add(lane, language, family, text, *, phase="if_gap", company_ids=(),
             source_id=None, model_id=None, direction_id=None, priority=4, trigger=None,
             query_spec=None):
+        if query_spec is None and not text.startswith("site:"):
+            domains = rules["retrieval_policy"].get("excluded_domains", [])
+            if domains:
+                query_spec = {"intent": family, "exclude_domains": domains,
+                              "query_without_domain_exclusions": text}
+                text += "".join(f" -site:{domain}" for domain in domains)
         identity = [lane, language, family, text, list(company_ids), source_id, model_id, direction_id]
         qid = sha256(repr(identity).encode("utf-8")).hexdigest()[:20]
         queries.append({"query_id": qid, "lane": lane, "language": language,
@@ -250,4 +256,6 @@ def build_plan(catalog: dict, sources: dict, rules: dict, manifest: dict,
         source_review_log="raw/source_reviews.jsonl",
         new_companies="Keep newly found names, mechanics and sources in discovery_candidates using the snapshot candidate_fields; company_name follow-ups work before catalog promotion.",
     )
+    if rules["retrieval_policy"].get("excluded_domains"):
+        result["execution_policy"]["source_order"] = policy["media_search"]
     return result

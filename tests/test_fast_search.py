@@ -36,7 +36,17 @@ class FastSearchTests(unittest.TestCase):
             self.assertEqual(actual, set(company['languages']))
             self.assertNotIn('themes', company)
         self.assertTrue(all(' OR ' not in x['query'] for x in plan['queries']))
-        self.assertTrue(all(len(x['query']) < 120 for x in plan['queries']))
+        self.assertTrue(all(len(x.get('query_without_domain_exclusions', x['query'])) < 120 for x in plan['queries']))
+        for query in plan['queries']:
+            if query['query'].startswith('site:'):
+                self.assertNotIn('-site:', query['query'])
+            else:
+                for domain in q['retrieval_policy']['excluded_domains']:
+                    self.assertIn(f'-site:{domain}', query['query'])
+                self.assertNotIn('-site:', query['query_without_domain_exclusions'])
+        gdi = next(item for item in plan['source_indexes'] if 'gdi' in item['source_ids'])
+        self.assertEqual((gdi['url'], gdi['index_kind']),
+                         ('https://www.globaldatinginsights.com/category/news/', 'publication_feed'))
         self.assertFalse(any('november-5-2026' in x['url'] or 'everyday-life' in x['url']
                              for x in plan['source_indexes']))
         vk_en = next(x for x in plan['queries'] if x['company_ids'] == ['vk_dating']
