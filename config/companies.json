@@ -1,5 +1,5 @@
 {
-  "version": "0.5",
+  "version": "0.7",
   "status": "monitoring_catalog_v1",
   "checked_on": "2026-11-15",
   "required_always_company_ids": [
@@ -258,7 +258,8 @@
           "相亲",
           "AI"
         ]
-      }
+      },
+      "primary_search_language": "zh"
     },
     {
       "id": "world",
@@ -603,9 +604,10 @@
       ],
       "verification_status": "official_source_identified",
       "evidence_urls": [
-        "https://www.coffeemeetsbagel.com/"
+        "https://www.coffeemeetsbagel.com/",
+        "https://www.coffeemeetsbagel.com/press"
       ],
-      "checked_on": "2026-11-15",
+      "checked_on": "2026-11-16",
       "source_ids": [
         "cmb_site"
       ]
@@ -624,7 +626,8 @@
       "enabled": true,
       "search_languages": [
         "ru",
-        "en"
+        "en",
+        "ja"
       ],
       "verification_status": "official_source_identified",
       "evidence_urls": [
@@ -642,8 +645,12 @@
         "en": [
           "dating",
           "Japan"
+        ],
+        "ja": [
+          "マッチングアプリ"
         ]
-      }
+      },
+      "primary_search_language": "ja"
     },
     {
       "id": "tapple",
@@ -654,21 +661,25 @@
         "タップル"
       ],
       "official_domains": [
-        "tapple.me"
+        "tapple.me",
+        "tapple.co.jp"
       ],
       "enabled": true,
       "search_languages": [
         "ru",
-        "en"
+        "en",
+        "ja"
       ],
       "verification_status": "official_source_identified",
       "evidence_urls": [
-        "https://tapple.me/"
+        "https://tapple.me/",
+        "https://www.tapple.co.jp/news/"
       ],
-      "checked_on": "2026-11-15",
+      "checked_on": "2026-11-16",
       "source_ids": [
         "tapple_site"
-      ]
+      ],
+      "primary_search_language": "ja"
     },
     {
       "id": "hily",
@@ -837,11 +848,11 @@
     }
   ],
   "collection_policy": {
-    "required_companies": "Искать в каждом запуске и сохранять все найденные материалы в выбранном периоде до редакционного отбора, включая не попавшие в top-10",
+    "required_companies": "Проверять в каждом запуске; все подходящие материалы выбранного периода сохранять до редакционного отбора. Для явного шума сохранять URL/title и причину исключения без полной загрузки.",
     "golden_adjacent": "Искать обязательно, но только в прямой связи с dating-контекстом из примеров",
     "missing_official_domain": "Продолжать обязательный поиск по названию и медиа; отсутствие домена не отключает компанию",
-    "storage": "Сохранять article JSON и причину последующего отклонения; неполный/недоступный текст помечать, не выдумывать",
-    "coverage": "Для каждой обязательной компании фиксировать выполненные запросы, число материалов и ошибки; ноль результатов отличается от невыполненного поиска"
+    "storage": "Подходящие статьи — Article JSON; ранние исключения — URL/title и причина в raw/rejected_materials.jsonl. Неизвестный/недоступный текст помечать, не выдумывать.",
+    "coverage": "Фиксировать проверку компании, предусмотренных языков и трёх направлений по источникам. Отдельно — основные пробелы и дополнительные задачи по финансам, рискам и моделям; не строить обязательное произведение компаний на семь тем. Ноль находок отличается от невыполненной проверки."
   },
   "coverage_gaps": [
     "Каталог открыт для добавлений; он не гарантирует полного покрытия рынка",

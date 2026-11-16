@@ -1,6 +1,6 @@
 {
-  "version": "0.4",
-  "status": "query_catalog_v1",
+  "version": "0.6",
+  "status": "event_focused_catalog_v2",
   "languages": [
     "ru",
     "en"
@@ -127,20 +127,21 @@
     },
     "marketing": {
       "ru": [
-        "кампания",
-        "реклама",
-        "продвижение",
-        "опрос",
-        "бренд",
-        "исследование"
+        "рекламная кампания",
+        "коллаборация",
+        "амбассадор",
+        "активация",
+        "брендовое исследование",
+        "опрос"
       ],
       "en": [
-        "campaign",
-        "advertising",
-        "promotion",
-        "survey",
-        "brand",
-        "research"
+        "ad campaign",
+        "brand campaign",
+        "collaboration",
+        "ambassador",
+        "activation",
+        "brand survey",
+        "survey"
       ]
     }
   },
@@ -193,10 +194,35 @@
     }
   },
   "company_query_policy": {
-    "baseline": "Название/алиасы без продуктового фильтра: ловит финансы, назначения и маркетинг",
-    "themes": "Дополнительные запросы по семи категориям для обязательных и российских компаний",
+    "baseline": "В fast-режиме источники проверяются раньше брендовых запросов. Уточнение: имя + dating-квалификатор при неоднозначности + одно действие/механика.",
+    "themes": "На компанию/язык — одно условное уточнение изменений продукта. Для всех компаний предусмотрено уточнение внешних интервью/результатов на основном языке. Intent и синоним выбираются по наблюдаемому сигналу; все сочетания не разворачиваются.",
     "disambiguation": "Для PURE, World, Pairs, Boo и других неоднозначных названий добавлять dating-контекст; не искать World без World ID/квалификаторов",
-    "all_aliases_in_baseline": true
+    "all_aliases_in_baseline": false,
+    "alias_policy": "Начинать с основного/локального имени, следующий алиас или синоним брать при пробеле; RU/EN и локальный язык не считать проверенными по одной метке.",
+    "event_terms": {
+      "ru": [
+        "изменения продукта",
+        "обновление",
+        "новая функция",
+        "тестирует"
+      ],
+      "en": [
+        "product changes",
+        "product update",
+        "new feature",
+        "tests"
+      ],
+      "zh": [
+        "产品更新",
+        "功能调整",
+        "测试"
+      ],
+      "ja": [
+        "機能変更",
+        "アップデート",
+        "テスト"
+      ]
+    }
   },
   "discovery": {
     "enabled": true,
@@ -217,19 +243,17 @@
     "novelty_signals": {
       "ru": [
         "запуск",
-        "новый",
+        "представил",
         "пилот",
         "тест",
-        "инвестиции",
-        "раунд"
+        "новая функция"
       ],
       "en": [
-        "launch",
-        "new",
+        "launches",
+        "introduces",
         "pilot",
         "beta",
-        "funding",
-        "seed"
+        "new feature"
       ]
     },
     "business_model_patterns": [
@@ -459,13 +483,23 @@
         "id": "china_new_models",
         "language": "zh",
         "query": "(\"相亲\" OR \"婚恋\") (\"AI\" OR \"退款\" OR \"商业模式\") (\"上线\" OR \"融资\")",
-        "rationale": "Китайские запуски, AI и возврат денег"
+        "rationale": "Китайские запуски, AI и возврат денег",
+        "direction_queries": {
+          "launches": "相亲 上线",
+          "features": "婚恋 功能调整",
+          "marketing": "婚恋 品牌活动"
+        }
       },
       {
         "id": "japan_new_models",
         "language": "ja",
         "query": "(\"マッチングアプリ\" OR \"婚活\") (\"新機能\" OR \"開始\" OR \"料金\")",
-        "rationale": "Японские функции, запуски и цены"
+        "rationale": "Японские функции, запуски и цены",
+        "direction_queries": {
+          "launches": "マッチングアプリ サービス開始",
+          "features": "マッチングアプリ 機能変更",
+          "marketing": "マッチングアプリ キャンペーン"
+        }
       }
     ],
     "source_seed_ids": [
@@ -504,14 +538,536 @@
   "retrieval_policy": {
     "window": "Из подтверждённого manifest; параметры дат добавляет адаптер поискового провайдера, не жёсткая строка запроса",
     "mandatory_coverage": "Нельзя урезать обязательные компании при лимите бюджета молча; статус coverage_incomplete и список пропущенных запросов",
-    "source_lookup": "Проверенные official_* и IR источники получают отдельный site-запрос; общие анкеты/чаты не собирать",
+    "source_lookup": "Сначала нейтральные свежие разделы официальных источников и ключевых СМИ, один раз на URL. site-запрос — уточнение незавершённого источника/направления.",
     "soft_negative_signals": [
       "гороскоп",
       "dating tips",
       "celebrity gossip"
     ],
-    "negative_filter_mode": "Мягкие сигналы для оценки шума; не добавлять глобальные минус-слова, отсекающие кампании и финансы",
-    "collection_before_ranking": true
+    "negative_filter_mode": "Исключать тип материала по смыслу, без глобальных -best/-review/-survey. Заголовок помогает раннему отсеву; сомнение требует текста.",
+    "collection_before_ranking": true,
+    "candidate_filter": {
+      "excluded_types": [
+        "service_comparison",
+        "best_services_list",
+        "choice_guide",
+        "usage_guide",
+        "evergreen_overview",
+        "old_event_reprint"
+      ],
+      "title_rules": [
+        {
+          "reason": "best_services_list",
+          "pattern": "^\\s*(?:the\\s+)?(?:\\d+\\s+)?(?:best|top)\\s+(?:\\d+\\s+)?dating\\s+(?:apps?|sites?|services?)\\b"
+        },
+        {
+          "reason": "best_services_list",
+          "pattern": "^\\s*(?:(?:топ)[\\s\\-–—:]*(?:\\d+)?\\s*|(?:\\d+\\s+)?лучши[ехй]\\s+)(?:приложени[яй]|сайты|сайтов|сервисы|сервисов)\\s+(?:для\\s+)?знакомств"
+        },
+        {
+          "reason": "service_comparison",
+          "pattern": "^\\s*[\\w .&/+\\-]{1,60}\\s+(?:vs\\.?|versus|против)\\s+"
+        },
+        {
+          "reason": "service_comparison",
+          "pattern": "^\\s*(?:чем\\s+отлича(?:ются|ется)|(?:в\\s+ч[её]м\\s+)?(?:разница|отличи[ея])\\s+между|сравнение\\s+(?:сервисов|приложений))\\b"
+        },
+        {
+          "reason": "choice_guide",
+          "pattern": "^\\s*(?:како[йе]\\s+(?:сервис|приложение|сайт)\\s+(?:знакомств\\s+)?(?:лучше|выбрать)|(?:which|what)\\s+dating\\s+(?:app|site|service)\\s+(?:is\\s+(?:the\\s+)?best|should\\s+(?:i|you)\\s+choose))\\b"
+        },
+        {
+          "reason": "usage_guide",
+          "pattern": "^\\s*(?:how\\s+to\\s+use\\s+(?:tinder|bumble|hinge|mamba|vk\\s+dating)|как\\s+пользоваться\\s+(?:тиндером|бамбл|мамбой|vk|вк))\\b"
+        }
+      ],
+      "campaign_title_guard": {
+        "actions": [
+          "launch",
+          "introduc",
+          "unveil",
+          "запуст",
+          "представ"
+        ],
+        "objects": [
+          "campaign",
+          "кампани",
+          "activation",
+          "активаци"
+        ]
+      },
+      "uncertain": "needs_review",
+      "comparison_with_feature": "Само сравнение исключить; новую фичу проверить по отдельному сообщению о запуске.",
+      "date_rule": "Проверить published_at и новый факт в окне. dateModified, дата URL и свежая индексация не доказывают новизну."
+    },
+    "term_selection": "build_followup_query выбирает намерение и синоним по сигналу/пробелу; отрицательные изменения, интервью и результаты доступны на RU/EN/ZH/JA. Первый элемент списка не задаёт все последующие обращения."
   },
-  "notes": "Это план запросов, не работающий сборщик. Полнота проверяется на golden_set; затем возможны адаптация синтаксиса и бюджетов под поисковый API."
+  "notes": "Fast v1.1: новостные разделы → открытые события и внешние интервью/результаты → уточнения по сигналам. Новые компании сохраняются кандидатами. Отсутствие классов новостей за период допустимо. План не выполняет сеть автоматически.",
+  "research_policy": {
+    "mode": "sources_then_event_gaps",
+    "primary_directions": [
+      "launches",
+      "features",
+      "marketing"
+    ],
+    "directions": {
+      "launches": {
+        "section_ids": [
+          "features",
+          "new_models"
+        ],
+        "terms": {
+          "ru": [
+            "запуск",
+            "представил",
+            "пилот",
+            "бета",
+            "выход на рынок"
+          ],
+          "en": [
+            "launches",
+            "introduces",
+            "pilot",
+            "beta",
+            "market expansion"
+          ],
+          "zh": [
+            "上线",
+            "发布",
+            "试点"
+          ],
+          "ja": [
+            "サービス開始",
+            "リリース",
+            "実証実験"
+          ]
+        }
+      },
+      "features": {
+        "section_ids": [
+          "features",
+          "monetization",
+          "trust_safety",
+          "ai"
+        ],
+        "terms": {
+          "ru": [
+            "изменения продукта",
+            "новая функция",
+            "тестирует",
+            "обновление",
+            "изменение тарифа",
+            "ограничения",
+            "отключение функции",
+            "редизайн",
+            "миграция"
+          ],
+          "en": [
+            "product changes",
+            "new feature",
+            "tests",
+            "product update",
+            "pricing change",
+            "restrictions",
+            "discontinued",
+            "redesign",
+            "platform migration"
+          ],
+          "zh": [
+            "功能调整",
+            "新功能",
+            "测试",
+            "价格调整",
+            "功能下线",
+            "改版"
+          ],
+          "ja": [
+            "機能変更",
+            "新機能",
+            "テスト",
+            "料金改定",
+            "機能終了",
+            "リニューアル"
+          ]
+        }
+      },
+      "marketing": {
+        "section_ids": [
+          "marketing"
+        ],
+        "terms": {
+          "ru": [
+            "рекламная кампания",
+            "коллаборация",
+            "амбассадор",
+            "активация",
+            "брендовое исследование"
+          ],
+          "en": [
+            "ad campaign",
+            "brand campaign",
+            "collaboration",
+            "ambassador",
+            "activation",
+            "brand survey"
+          ],
+          "zh": [
+            "品牌活动",
+            "广告",
+            "品牌合作"
+          ],
+          "ja": [
+            "キャンペーン",
+            "実施",
+            "コラボ",
+            "広告キャンペーン",
+            "アンバサダー"
+          ]
+        }
+      }
+    },
+    "secondary_sections": [
+      "business",
+      "trust_safety"
+    ],
+    "coverage_mode": "companies_languages_and_source_directions",
+    "coverage_rule": "Проверять компании и предусмотренные языки, три приоритетных направления по источникам. Не строить обязательное произведение компаний на семь разделов и 14 моделей. Пропуски основных проверок видны отдельно от дополнительных задач.",
+    "secondary_rule": "Финансы, сделки, назначения и внешние риски собирать попутно из источников; отдельные запросы выполнять после основных проверок. Бизнес-новость и опрос не требуют продуктового запуска.",
+    "model_rule": "14 моделей — словарь для обнаружения и уточнений по сигналам, не обязательная квота запросов в каждом запуске."
+  },
+  "company_event_hints": {
+    "tinder": {
+      "ru": [
+        "тестирует групповые знакомства",
+        "правила AI-агентов"
+      ],
+      "en": [
+        "tests group dating",
+        "AI agents policy"
+      ]
+    },
+    "match_group": {
+      "ru": [
+        "Tinder новые функции",
+        "Hinge тест подписки"
+      ],
+      "en": [
+        "Tinder new features",
+        "Hinge subscription test"
+      ]
+    },
+    "hinge": {
+      "ru": [
+        "тест дешёвой подписки"
+      ],
+      "en": [
+        "tests cheaper subscription"
+      ]
+    },
+    "grindr": {
+      "ru": [
+        "Edge AI подписка"
+      ],
+      "en": [
+        "Edge AI subscription"
+      ]
+    },
+    "freddie": {
+      "ru": [
+        "Grindr партнёрство"
+      ],
+      "en": [
+        "Grindr partnership"
+      ]
+    },
+    "liangpei_ai": {
+      "ru": [
+        "гарантия брака возврат денег"
+      ],
+      "en": [
+        "marriage money-back guarantee"
+      ],
+      "zh": [
+        "结婚 退款"
+      ]
+    },
+    "pure": {
+      "ru": [
+        "анонимные объявления обновление"
+      ],
+      "en": [
+        "anonymous ads product update"
+      ]
+    },
+    "bumble": {
+      "ru": [
+        "новая рекламная кампания"
+      ],
+      "en": [
+        "new brand campaign"
+      ]
+    },
+    "ithaca": {
+      "ru": [
+        "Bumble сделка"
+      ],
+      "en": [
+        "Bumble take private"
+      ]
+    },
+    "world": {
+      "ru": [
+        "Tinder верификация опрос"
+      ],
+      "en": [
+        "Tinder verified profiles survey"
+      ]
+    },
+    "harris_poll": {
+      "ru": [
+        "World знакомства опрос"
+      ],
+      "en": [
+        "World dating survey"
+      ]
+    }
+  },
+  "search_intents": {
+    "product_change": {
+      "outside_official": false,
+      "terms": {
+        "ru": [
+          "изменения продукта",
+          "обновление",
+          "новая функция",
+          "тестирует"
+        ],
+        "en": [
+          "product changes",
+          "product update",
+          "new feature",
+          "tests"
+        ],
+        "zh": [
+          "产品更新",
+          "功能调整",
+          "测试"
+        ],
+        "ja": [
+          "機能変更",
+          "アップデート",
+          "テスト"
+        ]
+      }
+    },
+    "restrictions": {
+      "outside_official": false,
+      "terms": {
+        "ru": [
+          "ограничения",
+          "новые правила",
+          "запрет"
+        ],
+        "en": [
+          "restrictions",
+          "policy change",
+          "bans"
+        ],
+        "zh": [
+          "限制",
+          "规则调整"
+        ],
+        "ja": [
+          "利用制限",
+          "規約変更"
+        ]
+      }
+    },
+    "removal": {
+      "outside_official": false,
+      "terms": {
+        "ru": [
+          "отключил",
+          "отмена функции",
+          "откат"
+        ],
+        "en": [
+          "discontinued",
+          "removes",
+          "rolls back"
+        ],
+        "zh": [
+          "功能下线",
+          "取消功能"
+        ],
+        "ja": [
+          "機能終了",
+          "提供終了"
+        ]
+      }
+    },
+    "redesign": {
+      "outside_official": false,
+      "terms": {
+        "ru": [
+          "редизайн",
+          "обновил интерфейс"
+        ],
+        "en": [
+          "redesign",
+          "new interface"
+        ],
+        "zh": [
+          "改版",
+          "界面更新"
+        ],
+        "ja": [
+          "リニューアル",
+          "画面変更"
+        ]
+      }
+    },
+    "pricing": {
+      "outside_official": false,
+      "terms": {
+        "ru": [
+          "изменение тарифа",
+          "новая подписка",
+          "изменение цены",
+          "платный доступ"
+        ],
+        "en": [
+          "pricing change",
+          "new subscription",
+          "price increase",
+          "paywall"
+        ],
+        "zh": [
+          "价格调整",
+          "订阅价格"
+        ],
+        "ja": [
+          "料金改定",
+          "有料プラン"
+        ]
+      }
+    },
+    "migration": {
+      "outside_official": false,
+      "terms": {
+        "ru": [
+          "миграция",
+          "смена платформы",
+          "технологическое партнёрство"
+        ],
+        "en": [
+          "platform migration",
+          "technology partnership",
+          "migrates"
+        ],
+        "zh": [
+          "平台迁移",
+          "技术合作"
+        ],
+        "ja": [
+          "プラットフォーム移行",
+          "技術提携"
+        ]
+      }
+    },
+    "interview": {
+      "outside_official": true,
+      "terms": {
+        "ru": [
+          "интервью",
+          "интервью основателя",
+          "продуктовая стратегия"
+        ],
+        "en": [
+          "interview",
+          "founder interview",
+          "product strategy"
+        ],
+        "zh": [
+          "专访",
+          "创始人访谈"
+        ],
+        "ja": [
+          "インタビュー",
+          "開発者インタビュー"
+        ]
+      }
+    },
+    "experiment_results": {
+      "outside_official": true,
+      "terms": {
+        "ru": [
+          "результаты эксперимента",
+          "результаты A/B-теста",
+          "результаты тестирования"
+        ],
+        "en": [
+          "experiment results",
+          "A/B test results",
+          "subscription test results"
+        ],
+        "zh": [
+          "实验结果",
+          "测试结果"
+        ],
+        "ja": [
+          "実験結果",
+          "テスト結果"
+        ]
+      }
+    },
+    "disclosure": {
+      "outside_official": true,
+      "terms": {
+        "ru": [
+          "раскрыл результаты",
+          "поделился результатами",
+          "новые данные"
+        ],
+        "en": [
+          "reveals results",
+          "product results",
+          "discloses"
+        ],
+        "zh": [
+          "披露结果",
+          "公布数据"
+        ],
+        "ja": [
+          "結果公表",
+          "実績発表"
+        ]
+      }
+    }
+  },
+  "external_search": {
+    "company_scope": "all_enabled_companies_all_markets",
+    "intents": [
+      "interview",
+      "experiment_results",
+      "disclosure"
+    ],
+    "first_pass_intents": [
+      "interview",
+      "experiment_results"
+    ],
+    "first_pass_languages": [
+      "ru",
+      "en"
+    ],
+    "contexts": {
+      "ru": "приложение знакомств",
+      "en": "dating app",
+      "zh": "婚恋",
+      "ja": "マッチングアプリ"
+    },
+    "rule": "Искать интервью, эксперименты и раскрытые результаты за пределами официальных сайтов для российских и международных компаний всех групп каталога, а также новых игроков. Источниками могут быть СМИ, профессиональные издания, интервью и подкасты с доступным текстом.",
+    "followup_rule": "По конкретному сигналу или незавершённой проверке выбрать intent и один синоним через build_followup_query. Отсутствие интервью/эксперимента за период допустимо и само по себе не создаёт очередь запросов.",
+    "domain_filter_rule": "Для известного бренда исключить известные официальные домены через -site при поддержке провайдера. При отсутствии поддержки использовать query_without_domain_exclusions и отсев официальных доменов по результатам; сохранить фактический запрос и фильтры."
+  }
 }

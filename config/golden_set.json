@@ -1,7 +1,7 @@
 {
-  "version": "0.4",
+  "version": "0.6",
   "status": "user_accepted_golden_set",
-  "purpose": "Эталон тематики и обязательного поискового покрытия; все упомянутые компании должны искаться и найденные статьи сохраняться до top-10",
+  "purpose": "Эталон тематики и поискового покрытия; все упомянутые компании должны проверяться. Подходящие статьи сохраняются до top-10; явные сравнения/рейтинги/руководства фиксируются как исключённые, без обязательной загрузки полного текста.",
   "source": "Примеры пользователя; оригинал хранится локально и исключён из Git",
   "source_fact_verification": "Признание эталоном отбора не заменяет проверку текста, дат и чисел при загрузке",
   "live_window_policy": "Старые примеры не обязаны попадать в новый выбранный период. Оценка исторического recall проводится отдельно от актуального выпуска.",
@@ -172,6 +172,158 @@
         "https://www.globaldatinginsights.com/featured/dating-app-verification-world-survey/"
       ],
       "expected": "Найти/загрузить и сохранить при проверке reference-корпуса; для live — искать компании в выбранном периоде"
+    }
+  ],
+  "research_focus": "Приоритет: новые запуски, фичи/тарифы, маркетинговые кампании. Все исходные 10 кейсов сохраняются; финансы/риски — дополнительный поток. Исторические кейсы не подменяют live-период.",
+  "reference_gaps": [],
+  "selection_checks": {
+    "status": "synthetic_filter_fixtures_not_historical_news",
+    "cases": [
+      {
+        "title": "Лучшие приложения знакомств 2026",
+        "material_type": "best_services_list",
+        "expected": "excluded"
+      },
+      {
+        "title": "Bumble vs Mamba: which dating app is better?",
+        "material_type": "service_comparison",
+        "expected": "excluded"
+      },
+      {
+        "title": "Чем отличаются Бамбл, Мамба и VK Знакомства",
+        "material_type": "service_comparison",
+        "expected": "excluded"
+      },
+      {
+        "title": "Какой сервис лучше: Мамба или VK Знакомства?",
+        "material_type": "choice_guide",
+        "expected": "excluded"
+      },
+      {
+        "title": "Tinder launches a brand campaign called Best First Date",
+        "material_type": "marketing_event",
+        "expected": "needs_review"
+      },
+      {
+        "title": "Twinby запустил офлайн-активацию для нового города",
+        "material_type": "marketing_event",
+        "expected": "needs_review"
+      },
+      {
+        "title": "tapple introduces a new ambassador campaign",
+        "material_type": "marketing_event",
+        "expected": "needs_review"
+      },
+      {
+        "title": "Hinge tests a cheaper subscription",
+        "material_type": "product_change",
+        "expected": "needs_review"
+      }
+    ]
+  },
+  "marketing_reference_policy": {
+    "status": "verified_primary_source_extension",
+    "verified_on": "2026-11-15",
+    "scope": "Три исторических эталона запуска кампании дополняют исходные 10 пользовательских cases. Это реальные материалы, отдельно от синтетических selection_checks; не новости текущего live-периода.",
+    "source_limits": "Официальное сообщение подтверждает анонс, креатив и заявленный план размещения, но не независимую эффективность. Даты публикации и начала размещения различаются."
+  },
+  "marketing_reference_cases": [
+    {
+      "id": "tinder_swipe_campaign_2023",
+      "title": "Tinder анонсирует глобальную кампанию It Starts With a Swipe",
+      "company_ids": [
+        "tinder"
+      ],
+      "section_ids": [
+        "marketing"
+      ],
+      "source_urls": [
+        "https://www.tinderpressroom.com/2023-02-27-TINDER-REDEFINES-EXPECTATIONS-WITH-NEW-BRAND-CAMPAIGN-THAT-CELEBRATES-GEN-ZS-AUTHENTIC,-FLUID-AND-BEAUTIFUL-CONNECTIONS"
+      ],
+      "source_kind": "official_newsroom",
+      "published_at": "2023-02-27",
+      "first_placement_date": "2023-02-28",
+      "launch_stage": "announced",
+      "date_evidence": "Официальный список News указывает 27 February 2023; в статье dateline February 27 и отдельно начало размещения February 28.",
+      "date_evidence_url": "https://www.tinderpressroom.com/news?l=100",
+      "new_event": "Анонс новой глобальной брендовой кампании; креатив о разных сценариях отношений, размещение в социальных сетях, стриминге и наружной рекламе.",
+      "markets_or_audience": "Gen Z; США, Великобритания, Германия, Франция, Испания, Австралия, Бразилия по сообщению Tinder.",
+      "evidence_quote": "Today, Tinder launched its first-ever global brand campaign",
+      "search_terms": {
+        "ru": [
+          "Tinder новая брендовая кампания"
+        ],
+        "en": [
+          "Tinder launches brand campaign",
+          "It Starts With a Swipe campaign"
+        ]
+      },
+      "expected": "Сохранить как marketing_event при проверке исторического окна; новый продукт не обязателен. Не переносить дату размещения на published_at и не подставлять reference URL в измерение live discovery."
+    },
+    {
+      "id": "hinge_afterlife_campaign_2024",
+      "title": "Hinge представляет новую волну Designed to Be Deleted с Hingie Afterlife",
+      "company_ids": [
+        "hinge"
+      ],
+      "section_ids": [
+        "marketing"
+      ],
+      "source_urls": [
+        "https://hinge.co/newsroom/hingie-afterlife-2024"
+      ],
+      "source_kind": "official_newsroom",
+      "published_at": "2024-04-09",
+      "first_placement_date": "2024-04-09",
+      "launch_stage": "launched",
+      "date_evidence": "На странице указано April 9, 2024; текст отдельно сообщает о выпуске роликов в YouTube и соцсетях 9 апреля.",
+      "new_event": "Новая волна рекламного креатива с персонажем Hingie и Patti Harrison; истории вдохновлены реальными свиданиями пользователей.",
+      "markets_or_audience": "Gen Z и молодые миллениалы; США, Канада, Великобритания, Австралия по сообщению Hinge.",
+      "evidence_quote": "Today, Hinge unveils its fifth global",
+      "search_terms": {
+        "ru": [
+          "Hinge новая рекламная кампания"
+        ],
+        "en": [
+          "Hinge new ad campaign",
+          "Hingie Afterlife campaign"
+        ]
+      },
+      "expected": "Сохранить как новое marketing_event, хотя платформа Designed to Be Deleted существует с 2019 года: новизна в конкретной волне 2024, а не в повторении старого слогана."
+    },
+    {
+      "id": "bumble_lok_activation_2025",
+      "title": "Bumble и LÕK анонсируют Game. Set. Match. с офлайн-встречами на падел-кортах",
+      "company_ids": [
+        "bumble"
+      ],
+      "partners": [
+        "LÕK"
+      ],
+      "section_ids": [
+        "marketing"
+      ],
+      "source_urls": [
+        "https://loksports.com/en/lokblog/press-release-bumble-y-lok-n21"
+      ],
+      "source_kind": "official_partner_message",
+      "published_at": "2025-05-21",
+      "first_placement_date": "2025-05-31",
+      "launch_stage": "announced",
+      "date_evidence": "На странице Published: 05/21/2025, внутри dateline May 20; первая встреча запланирована на May 31. published_at берётся из даты публикации, не из dateline или даты мероприятия.",
+      "new_event": "Совместная кампания дейтинг-сервиса и спортивного бренда с серией офлайн-встреч; пример коллаборации и активации, а не общий совет о свиданиях.",
+      "markets_or_audience": "Одинокие участники; Мадрид, Севилья и Барселона по сообщению партнёра.",
+      "evidence_quote": "Starting May 31, Bumble and LÕK will organize paddle events",
+      "search_terms": {
+        "ru": [
+          "Bumble коллаборация падел офлайн"
+        ],
+        "en": [
+          "Bumble LOK campaign activation",
+          "Game Set Match Bumble"
+        ]
+      },
+      "expected": "Сохранить как marketing_event с announced для будущих активаций. Сообщение официального партнёра — первичное доказательство; исследование внутри релиза не доказывает эффективность кампании."
     }
   ]
 }

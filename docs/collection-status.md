@@ -1,5 +1,7 @@
 # Результат разового сбора
 
+Исторический отчёт предыдущего сбора. Текущий маршрут: [research по событиям](event-focused-research.md); старые показатели не являются замером новой версии.
+
 15 ноября 2026, период **1–14 ноября включительно**, Москва. Запуск: `data/runs/20261115T000000+0300_c85bf605/`.
 Подробные материалы: `collection_report.md`, `collection_summary.json`, `coverage.json`, `article_index.json`, `raw/search/`, `raw/collection_records.json` внутри этого запуска. Корпус локальный, в Git не включён.
 

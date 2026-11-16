@@ -161,6 +161,49 @@ class DiscoveryTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     validate_configs(invalid, root / "schemas")
 
+    def test_event_policy_rejects_missing_language_queries_and_conflicting_filters(self):
+        root = Path(__file__).resolve().parents[1]
+        configs = {name: read_json(root / "config" / f"{name}.json") for name in CONFIG_NAMES}
+        for change in ('direction_terms', 'company_terms', 'native_query', 'primary_language',
+                       'filter_pattern', 'editorial_filter', 'hint_company', 'campaign_company'):
+            with self.subTest(change=change):
+                invalid = copy.deepcopy(configs)
+                rules = invalid['queries']
+                if change == 'direction_terms':
+                    del rules['research_policy']['directions']['marketing']['terms']['ja']
+                elif change == 'company_terms':
+                    del rules['company_query_policy']['event_terms']['ja']
+                elif change == 'native_query':
+                    del rules['discovery']['native_language_queries'][0]['direction_queries']['marketing']
+                elif change == 'primary_language':
+                    invalid['companies']['companies'][0]['primary_search_language'] = 'missing'
+                elif change == 'filter_pattern':
+                    rules['retrieval_policy']['candidate_filter']['title_rules'][0]['pattern'] = '['
+                elif change == 'editorial_filter':
+                    invalid['editorial_policy']['material_filter']['excluded_types'].remove('service_comparison')
+                elif change == 'campaign_company':
+                    invalid['golden_set']['marketing_reference_cases'][0]['company_ids'] = ['unknown_brand']
+                else:
+                    rules['company_event_hints']['unknown_brand'] = {'en': ['launches']}
+                with self.assertRaises(ValueError):
+                    validate_configs(invalid, root / 'schemas')
+
+    def test_old_query_snapshots_remain_available_only_for_explicit_exhaustive_comparison(self):
+        root = Path(__file__).resolve().parents[1]
+        legacy = {name: read_json(root / 'config' / f'{name}.json') for name in CONFIG_NAMES}
+        del legacy['queries']['research_policy']
+        del legacy['queries']['retrieval_policy']['candidate_filter']
+        del legacy['editorial_policy']['material_filter']
+        del legacy['editorial_policy']['research_focus']
+        with self.assertRaisesRegex(ValueError, 'research_policy'):
+            validate_configs(legacy, root / 'schemas')
+        validate_configs(legacy, root / 'schemas', allow_legacy_queries=True)
+        comparison = build_plan(legacy['companies'], legacy['sources'], legacy['queries'],
+                                self.manifest, strategy='exhaustive')
+        self.assertEqual(comparison['status'], 'planned_not_executed')
+        with self.assertRaisesRegex(ValueError, 'research_policy'):
+            build_plan(legacy['companies'], legacy['sources'], legacy['queries'], self.manifest)
+
     def test_same_query_for_two_models_preserves_both_coverage_links(self):
         rules = copy.deepcopy(self.rules)
         pattern = copy.deepcopy(rules["discovery"]["business_model_patterns"][0])

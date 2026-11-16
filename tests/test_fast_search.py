@@ -7,6 +7,7 @@ import tempfile
 import unittest
 
 from dating_digest.discovery.plan import build_plan
+from dating_digest.discovery.screening import screen_candidate
 from dating_digest.discovery.session import Budget, WorkLedger, cache_is_fresh, checkpoint, request_key
 
 
@@ -27,16 +28,19 @@ class FastSearchTests(unittest.TestCase):
         self.assertEqual(set(plan['coverage_targets']['models']),
                          {x['id'] for x in q['discovery']['business_model_patterns']})
         self.assertEqual(set(plan['coverage_targets']['native_languages']), {'zh', 'ja'})
+        self.assertEqual(plan['coverage_targets']['primary_directions'], ['launches', 'features', 'marketing'])
+        self.assertFalse(plan['coverage_targets']['models_required_each_run'])
         for company in plan['coverage']:
             actual = {x['language'] for x in plan['queries'] if x['query_id'] in company['query_ids']
-                      and x['family'] == 'baseline'}
+                      and x['family'] == 'event_lookup'}
             self.assertEqual(actual, set(company['languages']))
+            self.assertNotIn('themes', company)
         self.assertTrue(all(' OR ' not in x['query'] for x in plan['queries']))
         self.assertTrue(all(len(x['query']) < 120 for x in plan['queries']))
         self.assertFalse(any('november-5-2026' in x['url'] or 'everyday-life' in x['url']
                              for x in plan['source_indexes']))
         vk_en = next(x for x in plan['queries'] if x['company_ids'] == ['vk_dating']
-                     and x['family'] == 'baseline' and x['language'] == 'en')
+                     and x['family'] == 'event_lookup' and x['language'] == 'en')
         self.assertIn('VK Dating', vk_en['query'])
         world = [x for x in plan['queries'] if x['source_id'] == 'world_blog']
         self.assertTrue(all('dating' in x['query'] for x in world))
@@ -49,6 +53,71 @@ class FastSearchTests(unittest.TestCase):
         index = next(item for item in merged['source_indexes'] if 'bumble_buzz' in item['source_ids'])
         self.assertIn('shared_newsroom', index['source_ids'])
         self.assertEqual(index['search_priority'], 1)
+
+    def test_sources_and_first_pass_cover_campaigns_without_generic_brand_search(self):
+        root = Path(__file__).resolve().parents[1]
+        c, s, q = [json.loads((root / 'config' / f'{name}.json').read_text(encoding='utf-8'))
+                   for name in ('companies', 'sources', 'queries')]
+        manifest = dict(run_id='event-test', window_start='2026-11-01T00:00:00+03:00',
+                        window_end_exclusive='2026-11-15T00:00:00+03:00',
+                        window_confirmation={'status': 'confirmed'})
+        plan = build_plan(c, s, q, manifest)
+        directions = set(q['research_policy']['primary_directions'])
+        first = [task for task in plan['queries'] if task['phase'] == 'first_pass']
+        self.assertTrue(first)
+        self.assertTrue(all(task['lane'] in {'discovery', 'external_discovery'} and not task['company_ids'] for task in first))
+        self.assertFalse(any(task['query'] in {'dating app', 'приложение знакомств'} for task in first))
+        expected_lookups = sum(len(item['search_languages']) for item in c['companies'] if item['enabled'])
+        self.assertEqual(sum(task['lane'] == 'company' for task in plan['queries']), expected_lookups)
+        self.assertFalse(any(task['family'] == 'reference_hint' or task['family'] == 'new_models'
+                             for task in plan['queries']))
+        for language in ('ru', 'en', 'zh', 'ja'):
+            self.assertEqual({task['direction_id'] for task in first
+                              if task['language'] == language and task['lane'] == 'discovery'}, directions)
+        media_indexes = [item for item in plan['source_indexes'] if item['search_priority'] == 3]
+        self.assertEqual([sid for item in media_indexes for sid in item['source_ids']], s['source_policy']['key_media_ids'])
+        self.assertTrue(all(set(item['direction_ids']) == directions for item in media_indexes))
+        for sid in s['source_policy']['key_media_ids']:
+            fallbacks = [task for task in plan['queries'] if task['lane'] == 'media_review' and task['source_id'] == sid]
+            self.assertEqual({task['direction_id'] for task in fallbacks}, directions)
+            self.assertTrue(all(task['phase'] == 'if_gap' and task['trigger'] for task in fallbacks))
+        for cid, language, native in (('liangpei_ai', 'zh', '良配'), ('tapple', 'ja', 'タップル'), ('pairs', 'ja', 'ペアーズ')):
+            company = next(item for item in plan['coverage'] if item['company_id'] == cid)
+            self.assertEqual(company['primary_language'], language)
+            self.assertTrue(any(native in task['query'] and task['language'] == language
+                                for task in plan['queries'] if cid in task['company_ids']))
+        supplementary = [task for task in plan['queries'] if task['lane'] in {'risk_monitoring', 'secondary_review'}]
+        self.assertTrue(supplementary)
+        self.assertTrue(all(task['phase'] == 'if_gap' and task['trigger'] == 'secondary_after_primary'
+                            for task in supplementary))
+        q['discovery']['enabled'] = False
+        no_discovery = build_plan(c, s, q, manifest)
+        self.assertFalse(any(task['lane'] in {'discovery', 'external_discovery'} for task in no_discovery['queries']))
+        self.assertEqual(len(media_indexes), len([item for item in no_discovery['source_indexes']
+                                                 if item['search_priority'] == 3]))
+
+    def test_filter_excludes_service_guides_but_never_accepts_news_from_title(self):
+        root = Path(__file__).resolve().parents[1]
+        rules = json.loads((root / 'config/queries.json').read_text(encoding='utf-8'))
+        golden = json.loads((root / 'config/golden_set.json').read_text(encoding='utf-8'))
+        policy = rules['retrieval_policy']['candidate_filter']
+        for case in golden['selection_checks']['cases']:
+            with self.subTest(title=case['title']):
+                self.assertEqual(screen_candidate(case['title'], policy, material_type=case['material_type'])['status'], case['expected'])
+                self.assertEqual(screen_candidate(case['title'], policy)['status'], case['expected'])
+        for case in golden['marketing_reference_cases']:
+            with self.subTest(reference_campaign=case['id']):
+                self.assertEqual(screen_candidate(case['title'], policy)['status'], 'needs_review')
+        for title in ('Which dating app is best?', 'Top 10 dating apps for 2026',
+                      'Отличия между Бамбл, Мамбой и VK', 'Как пользоваться Мамбой'):
+            self.assertEqual(screen_candidate(title, policy)['status'], 'excluded', title)
+        for title in ('Tinder launches a new feature', 'Bumble quarterly results', 'Year in review',
+                      'An app launches a campaign called Best Dating Apps', '', 'Обзор Мамбы'):
+            self.assertEqual(screen_candidate(title, policy)['status'], 'needs_review', title)
+        self.assertEqual(screen_candidate('Обзор Мамбы', policy, material_type='evergreen_overview')['status'], 'excluded')
+        # A campaign-like title cannot override an evidenced comparison classification.
+        self.assertEqual(screen_candidate('Tinder launches a campaign', policy,
+                                          material_type='service_comparison')['status'], 'excluded')
 
     def test_actual_parameters_change_cache_identity_but_labels_are_not_parameters(self):
         args = dict(provider='p', query='Tinder news', window_start='2026-11-01',

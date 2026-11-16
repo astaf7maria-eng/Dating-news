@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sqlite3
 from datetime import date, datetime, timezone
 from pathlib import Path
@@ -20,7 +21,8 @@ from .storage import archive_run
 CONFIG_NAMES = ("business_context", "editorial_policy", "pipeline", "companies", "sources", "queries", "golden_set")
 
 
-def validate_configs(configs: dict, schema_dir: Path = Path("schemas")) -> None:
+def validate_configs(configs: dict, schema_dir: Path = Path("schemas"), *,
+                     allow_legacy_queries: bool = False) -> None:
     """Check config links and scoring contracts before creating artifacts."""
     catalog, rules = configs["companies"], configs["queries"]
     companies = index_by_id(catalog["companies"], "company")
@@ -44,6 +46,8 @@ def validate_configs(configs: dict, schema_dir: Path = Path("schemas")) -> None:
         languages = company["search_languages"]
         if not isinstance(languages, list) or not languages or any(not isinstance(lang, str) for lang in languages):
             raise ValueError(f"Invalid search languages: {company['id']}")
+        if company.get("primary_search_language", languages[0]) not in languages:
+            raise ValueError(f"Primary search language is not enabled: {company['id']}")
         if company["id"] in required and not {"ru", "en"} <= set(languages):
             raise ValueError(f"Required company needs RU/EN queries: {company['id']}")
     for source in sources.values():
@@ -67,12 +71,95 @@ def validate_configs(configs: dict, schema_dir: Path = Path("schemas")) -> None:
         if (language not in rules["discovery"]["context"] or not isinstance(keywords, list)
                 or not keywords or any(not isinstance(word, str) or not word.strip() for word in keywords)):
             raise ValueError(f"Missing key media keywords or dating context: {source_id}")
+    focus = rules.get("research_policy", {})
+    screening = None
+    directions = []
+    if not focus and not allow_legacy_queries:
+        raise ValueError("Снимок queries не содержит research_policy; создайте новый запуск или используйте exhaustive")
+    if focus:
+        directions = focus.get("primary_directions", [])
+        vocabulary = focus.get("directions", {})
+        references(directions, vocabulary, "primary direction")
+        if not directions or len(directions) != len(set(directions)):
+            raise ValueError("Primary directions must be nonempty and unique")
+        references(focus.get("secondary_sections"), rules["category_signals"], "secondary section")
+        languages = (set(rules["languages"]) | {lang for c in companies.values() for lang in c["search_languages"]}
+                     | {sources[sid]["language"] for sid in media_ids})
+        for language in languages:
+            terms = rules["company_query_policy"].get("event_terms", {}).get(language)
+            if (not isinstance(terms, list) or not terms
+                    or any(not isinstance(term, str) or not term.strip() for term in terms)):
+                raise ValueError(f"Missing company event terms: {language}")
+        if "search_intents" in rules or "external_search" in rules:
+            intents = rules.get("search_intents", {})
+            external = rules.get("external_search", {})
+            if not isinstance(intents, dict) or "product_change" not in intents or not isinstance(external, dict):
+                raise ValueError("Search intents and external search policy must be configured together")
+            references(external.get("intents"), intents, "external search intent")
+            references(external.get("first_pass_intents"), external["intents"], "external first-pass intent")
+            references(external.get("first_pass_languages"), external.get("contexts", {}), "external search language")
+            if not external["intents"] or not external["first_pass_languages"]:
+                raise ValueError("External search needs intents and first-pass languages")
+            if any(not isinstance(definition, dict) for definition in intents.values()):
+                raise ValueError("Search intent definitions must be objects")
+            for language in languages | set(external["first_pass_languages"]):
+                context = external.get("contexts", {}).get(language)
+                if not isinstance(context, str) or not context.strip():
+                    raise ValueError(f"Missing external dating context: {language}")
+                for intent, definition in intents.items():
+                    terms = definition.get("terms", {}).get(language)
+                    if (not isinstance(terms, list) or not terms
+                            or any(not isinstance(term, str) or not term.strip() for term in terms)):
+                        raise ValueError(f"Missing intent terms: {intent}/{language}")
+            for intent, definition in intents.items():
+                if type(definition.get("outside_official")) is not bool:
+                    raise ValueError(f"Invalid external-domain flag: {intent}")
+            if any(not intents[intent]["outside_official"] for intent in external["intents"]):
+                raise ValueError("External search intents must exclude official company domains")
+            review_rule = source_policy.get("index_review")
+            if not isinstance(review_rule, str) or not review_rule.strip():
+                raise ValueError("Missing source index review policy")
+        for direction in directions:
+            definition = vocabulary[direction]
+            references(definition["section_ids"], rules["category_signals"], "direction section")
+            for language in languages:
+                terms = definition.get("terms", {}).get(language)
+                if (not isinstance(terms, list) or not terms
+                        or any(not isinstance(term, str) or not term.strip() for term in terms)):
+                    raise ValueError(f"Missing event terms: {direction}/{language}")
+        for item in rules["discovery"]["native_language_queries"]:
+            for direction in directions:
+                query = item.get("direction_queries", {}).get(direction)
+                if not isinstance(query, str) or not query.strip():
+                    raise ValueError(f"Missing native event query: {item['id']}/{direction}")
+        references(list(rules.get("company_event_hints", {})), companies, "event hint company")
+        for cid, hints in rules.get("company_event_hints", {}).items():
+            if not set(hints) <= set(companies[cid]["search_languages"]):
+                raise ValueError(f"Event hint language is not enabled: {cid}")
+            for phrases in hints.values():
+                if (not isinstance(phrases, list) or not phrases
+                        or any(not isinstance(phrase, str) or not phrase.strip() for phrase in phrases)):
+                    raise ValueError(f"Invalid event hints: {cid}")
+        screening = rules["retrieval_policy"]["candidate_filter"]
+        if not screening["excluded_types"] or not screening["title_rules"]:
+            raise ValueError("Candidate filter must define types and title rules")
+        for rule in screening["title_rules"]:
+            references([rule["reason"]], screening["excluded_types"], "filter reason")
+            try:
+                re.compile(rule["pattern"], re.IGNORECASE)
+            except re.error as error:
+                raise ValueError(f"Invalid candidate filter pattern: {error}") from error
     if "editorial_policy" not in configs:  # Legacy plans only supplied the catalog.
         return
     storage = configs["pipeline"].get("storage", {})
     if not isinstance(storage, dict) or not isinstance(storage.get("article_archive_dir", "article"), str) or not storage.get("article_archive_dir", "article").strip():
         raise ValueError("storage.article_archive_dir must be a nonempty path string")
     policy = configs["editorial_policy"]
+    if screening is not None:
+        if set(policy["material_filter"]["excluded_types"]) != set(screening["excluded_types"]):
+            raise ValueError("Search and editorial material filters differ")
+        if policy["research_focus"]["primary_directions"] != directions:
+            raise ValueError("Search and editorial research directions differ")
     sections = index_by_id(policy["sections"], "editorial section")
     event, digest = [read_json(schema_dir / f"{name}.schema.json") for name in ("event", "digest")]
     if not (set(sections) == set(rules["category_signals"]) == set(event["properties"]["section_id"]["enum"])
@@ -86,8 +173,10 @@ def validate_configs(configs: dict, schema_dir: Path = Path("schemas")) -> None:
     limit = policy["max_news_total"]
     if type(limit) is not int or not 1 <= limit <= digest["properties"]["items"]["maxItems"]:
         raise ValueError("Editorial limit exceeds the digest schema limit")
-    for case in configs["golden_set"]["cases"]:
+    golden = configs["golden_set"]
+    for case in golden["cases"] + golden.get("marketing_reference_cases", []):
         references(case["company_ids"], required, "golden-set company")
+        references(case["section_ids"], sections, "golden-set section")
 
 
 def aware_timestamp(value: str) -> datetime:
@@ -143,7 +232,7 @@ def main() -> None:
                 snapshots = {name: read_json(args.config_dir / f"{name}.json") for name in ("companies", "sources", "queries")}
             else:
                 raise ValueError(f"Unsupported manifest version: {version}")
-            validate_configs(snapshots)
+            validate_configs(snapshots, allow_legacy_queries=args.strategy == "exhaustive")
             result = build_plan(snapshots["companies"], snapshots["sources"], snapshots["queries"], manifest, bundle,
                                 strategy=args.strategy)
             result["catalog_origin"] = "run_snapshot" if version == "0.5" else "live_legacy"
