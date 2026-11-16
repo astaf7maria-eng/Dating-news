@@ -6,6 +6,13 @@ import re
 from urllib.parse import urlsplit
 
 
+def require_fast_policy(rules: dict) -> None:
+    """Reject snapshots predating the agreed source-first research workflow."""
+    for name in ("research_policy", "search_intents", "external_search"):
+        if not isinstance(rules.get(name), dict) or not rules[name]:
+            raise ValueError(f"Search snapshot lacks {name}; create a new run")
+
+
 def company_search_name(company: dict, language: str) -> str:
     patterns = {"ru": r"[А-Яа-яЁё]", "zh": r"[\u4e00-\u9fff]", "ja": r"[\u3040-\u30ff]"}
     pattern = patterns.get(language)
@@ -29,29 +36,23 @@ def build_followup_query(plan: dict, *, language: str, intent: str,
     """
     snapshots = plan["config_snapshot"]
     catalog, sources, rules = (snapshots[name] for name in ("companies", "sources", "queries"))
+    require_fast_policy(rules)
     if company_id is not None and company_name is not None:
         raise ValueError("Use company_id or a discovered company_name")
     if type(term_index) is not int or term_index < 0:
         raise ValueError("term_index must be a nonnegative integer")
 
-    definitions = rules.get("search_intents", {})
-    directions = rules.get("research_policy", {}).get("directions", {})
+    definitions = rules["search_intents"]
+    directions = rules["research_policy"]["directions"]
     if intent in definitions or intent in directions:
         definition = definitions[intent] if intent in definitions else directions[intent]
         terms = definition["terms"].get(language, [])
-    elif intent == "product_change":
-        # Existing v1.0 snapshots keep their original company vocabulary.
-        definition = {"outside_official": False}
-        terms = rules["company_query_policy"]["event_terms"].get(language, [])
     else:
         raise ValueError(f"Unknown search intent in this snapshot: {intent}")
     if term_index >= len(terms):
         raise ValueError(f"No query term {term_index} for {intent}/{language}")
 
-    contexts = rules.get("external_search", {}).get("contexts", {})
-    legacy_contexts = {"zh": "相亲", "ja": "マッチングアプリ"}
-    context = (contexts.get(language) or rules["discovery"]["context"].get(language, [None])[0]
-               or legacy_contexts.get(language))
+    context = rules["external_search"]["contexts"].get(language)
     if not context:
         raise ValueError(f"Missing dating context: {language}")
     excluded_domains = set()

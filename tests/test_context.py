@@ -120,6 +120,27 @@ class ContextTests(unittest.TestCase):
 
 
 class ContextCliTests(unittest.TestCase):
+    def test_plan_search_rejects_removed_options_and_unfrozen_runs(self):
+        env = {**os.environ, "PYTHONPATH": str(ROOT / "src"), "PYTHONIOENCODING": "utf-8"}
+        with tempfile.TemporaryDirectory() as directory:
+            run_dir = Path(directory)
+            manifest_path = run_dir / "manifest.json"
+            command = [sys.executable, "-m", "dating_digest", "plan-search", "--run-dir", str(run_dir)]
+            for version in ("0.3", "0.4"):
+                manifest_path.write_text(json.dumps({"schema_version": version}), encoding="utf-8")
+                before = manifest_path.read_bytes()
+                result = subprocess.run(command, cwd=ROOT, env=env, capture_output=True, text=True, encoding="utf-8")
+                self.assertEqual(result.returncode, 2, result.stderr)
+                self.assertIn("create a new run", result.stderr)
+                self.assertFalse((run_dir / "search_plan.json").exists())
+                self.assertEqual(manifest_path.read_bytes(), before)
+            for options in (("--strategy", "exhaustive"), ("--strategy", "fast"), ("--config-dir", "config")):
+                result = subprocess.run(command + list(options), cwd=ROOT, env=env,
+                                        capture_output=True, text=True, encoding="utf-8")
+                self.assertEqual(result.returncode, 2, result.stderr)
+                self.assertIn("unrecognized arguments", result.stderr)
+                self.assertFalse((run_dir / "search_plan.json").exists())
+
     def test_run_freezes_context_and_rejects_tampering_without_pdf_dependency(self):
         env = {**os.environ, "PYTHONPATH": str(ROOT / "src"), "PYTHONIOENCODING": "utf-8"}
         with tempfile.TemporaryDirectory() as directory:
@@ -161,7 +182,7 @@ class ContextCliTests(unittest.TestCase):
             (config / "companies.json").unlink()
             (config / "sources.json").unlink()
             (config / "queries.json").unlink()
-            planned = run("plan-search", "--run-dir", str(run_dir), "--config-dir", str(config))
+            planned = run("plan-search", "--run-dir", str(run_dir))
             self.assertEqual(planned.returncode, 0, planned.stderr)
             plan_path = run_dir / "search_plan.json"
             plan_bytes = plan_path.read_bytes()
@@ -170,20 +191,20 @@ class ContextCliTests(unittest.TestCase):
             self.assertEqual(plan["config_snapshot"]["companies"], read(ROOT / "config/companies.json"))
             self.assertEqual(plan["context_sha256"], original["context_sha256"])
             self.assertEqual(plan["config_versions"]["business_context"], original["context_version"])
-            self.assertNotEqual(run("plan-search", "--run-dir", str(run_dir), "--config-dir", str(config)).returncode, 0)
+            self.assertNotEqual(run("plan-search", "--run-dir", str(run_dir)).returncode, 0)
             self.assertEqual(plan_path.read_bytes(), plan_bytes)
 
             tampered = copy.deepcopy(original)
             tampered["business_context"]["context_claims"][0]["status"] = "hypothesis"
             (run_dir / "context_bundle.json").write_text(json.dumps(tampered), encoding="utf-8")
-            rejected = run("plan-search", "--run-dir", str(run_dir), "--config-dir", str(config))
+            rejected = run("plan-search", "--run-dir", str(run_dir))
             self.assertNotEqual(rejected.returncode, 0)
             self.assertIn("snapshot", rejected.stderr)
             self.assertEqual(plan_path.read_bytes(), plan_bytes)
 
             snapshot = run_dir / "config_snapshot/companies.json"
             snapshot.write_text('{}', encoding="utf-8")
-            rejected = run("plan-search", "--run-dir", str(run_dir), "--config-dir", str(config))
+            rejected = run("plan-search", "--run-dir", str(run_dir))
             self.assertIn("Configuration snapshot", rejected.stderr)
             self.assertEqual(plan_path.read_bytes(), plan_bytes)
 

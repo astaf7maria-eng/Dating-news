@@ -104,16 +104,15 @@ class FollowupQueryTests(unittest.TestCase):
         self.assertTrue(all(query['phase'] == 'first_pass' and not query['company_ids'] for query in first))
         self.assertFalse(plan['coverage_targets']['models_required_each_run'])
 
-    def test_existing_v1_snapshot_keeps_working_without_external_policy(self):
-        configs = copy.deepcopy(self.configs)
-        del configs['queries']['external_search']
-        del configs['queries']['search_intents']
-        plan = self.plan(configs)
-        validate_configs(configs, self.root / 'schemas')
-        self.assertEqual(plan['schema_version'], '1.0')
-        self.assertFalse(any(query['lane'].startswith('external_') for query in plan['queries']))
-        self.assertEqual({entry['company_id'] for entry in plan['coverage']},
-                         {company['id'] for company in configs['companies']['companies'] if company['enabled']})
+    def test_snapshot_without_external_search_requires_new_run(self):
+        for field in ("external_search", "search_intents"):
+            configs = copy.deepcopy(self.configs)
+            del configs["queries"][field]
+            with self.subTest(field=field):
+                with self.assertRaisesRegex(ValueError, field + ".*new run"):
+                    self.plan(configs)
+                with self.assertRaisesRegex(ValueError, field + ".*new run"):
+                    validate_configs(configs, self.root / "schemas")
 
     def test_bad_intents_languages_and_term_indexes_fail_before_search(self):
         plan = self.plan()

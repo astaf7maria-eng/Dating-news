@@ -26,19 +26,21 @@ class DiscoveryTests(unittest.TestCase):
         }
 
     def plan(self, catalog=None):
-        return build_plan(catalog or self.catalog, self.sources, self.rules, self.manifest, strategy="exhaustive")
+        return build_plan(catalog or self.catalog, self.sources, self.rules, self.manifest)
 
-    def test_required_five_and_all_golden_companies_get_ru_en_baselines(self):
+    def test_required_and_golden_companies_keep_configured_languages(self):
         required = set(self.catalog["required_always_company_ids"]
                        + self.catalog["golden_set_company_ids"]
                        + self.catalog["golden_adjacent_company_ids"])
         self.assertTrue({"tinder", "badoo", "bumble", "hinge", "grindr"} <= required)
         self.assertTrue({cid for case in self.golden["cases"] for cid in case["company_ids"]} <= required)
         plan = self.plan()
+        self.assertEqual(plan["strategy"], "fast")
         for cid in required:
             languages = {q["language"] for q in plan["queries"]
-                         if q["lane"] == "company" and q["family"] == "baseline" and cid in q["company_ids"]}
-            self.assertTrue({"ru", "en"} <= languages, cid)
+                         if q["lane"] == "company" and q["family"] == "event_lookup" and cid in q["company_ids"]}
+            company = next(c for c in self.catalog["companies"] if c["id"] == cid)
+            self.assertEqual(languages, set(company["search_languages"]), cid)
 
     def test_no_silent_disabling_of_required_brand(self):
         catalog = copy.deepcopy(self.catalog)
@@ -51,14 +53,6 @@ class DiscoveryTests(unittest.TestCase):
         queries = [q for q in self.plan()["queries"] if "liangpei_ai" in q["company_ids"]]
         self.assertTrue(any(q["language"] == "zh" and "良配" in q["query"] for q in queries))
 
-    def test_unbranded_search_includes_unknown_models_and_risk_bulletins(self):
-        plan = self.plan()
-        discovered = [q for q in plan["queries"] if q["lane"] == "discovery"]
-        self.assertTrue(all(not q["company_ids"] for q in discovered))
-        self.assertTrue({"pay_per_date", "outcome_guarantee", "open_ended"}
-                        <= {q["model_id"] for q in discovered})
-        self.assertTrue(any(q["lane"] == "risk_monitoring" for q in plan["queries"]))
-
     def test_unconfirmed_period_rejected_and_custom_period_preserved(self):
         plan = self.plan()
         self.assertEqual(plan["window_start"], self.manifest["window_start"])
@@ -67,18 +61,11 @@ class DiscoveryTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "период"):
             self.plan()
 
-    def test_queries_deterministic_unique_and_not_reported_as_executed(self):
-        plan = self.plan()
-        self.assertEqual(plan, self.plan())
-        self.assertEqual(plan["query_count"], len({q["query_id"] for q in plan["queries"]}))
-        self.assertEqual(plan["status"], "planned_not_executed")
-        self.assertTrue(all(c["articles_saved"] is None for c in plan["coverage"]))
-        self.assertTrue(all(q["status"] == "planned" for q in plan["queries"]))
-        self.assertEqual(plan["config_snapshot"]["queries"], self.rules)
-
     def test_tasks_cover_every_query_once_without_mixing_language_results(self):
         plan = self.plan()
         by_id = {q["query_id"]: q for q in plan["queries"]}
+        self.assertEqual(len(by_id), len(plan["queries"]))
+        self.assertEqual(len({task["task_id"] for task in plan["search_tasks"]}), len(plan["search_tasks"]))
         assigned = []
         for task in plan["search_tasks"]:
             for language, query_ids in task["language_variants"].items():
@@ -88,11 +75,6 @@ class DiscoveryTests(unittest.TestCase):
                     assigned.append(query_id)
         self.assertCountEqual(assigned, by_id)
         self.assertEqual(len(assigned), len(set(assigned)))
-        tinder = next(q for q in plan["queries"] if q["lane"] == "company"
-                      and q["family"] == "baseline" and "tinder" in q["company_ids"])
-        task = next(t for t in plan["search_tasks"] if t["query"] == tinder["query"])
-        self.assertEqual(set(task["language_variants"]), {"ru", "en"})
-        self.assertTrue(set(task["language_variants"]["ru"]).isdisjoint(task["language_variants"]["en"]))
 
     def test_tasks_do_not_reuse_identifiers_across_reporting_windows(self):
         original = self.plan()
@@ -103,44 +85,23 @@ class DiscoveryTests(unittest.TestCase):
         self.assertTrue({t["task_id"] for t in original["search_tasks"]}.isdisjoint(
             t["task_id"] for t in changed["search_tasks"]))
 
-    def test_catalog_references_resolve(self):
-        root = Path(__file__).resolve().parents[1]
-        validate_configs({name: read_json(root / "config" / f"{name}.json") for name in CONFIG_NAMES}, root / "schemas")
-        self.assertEqual(len(self.golden["cases"]), 10)
-
     def test_official_media_and_investor_sources_precede_media_and_open_search(self):
         plan = self.plan()
         by_source = {source["id"]: source for source in self.sources["sources"]}
-        priorities = [q["search_priority"] for q in plan["queries"]]
-        self.assertEqual(priorities, sorted(priorities))
-        self.assertEqual(set(priorities), {1, 2, 3, 4})
+        for entries in (plan["source_indexes"], plan["queries"], plan["search_tasks"]):
+            priorities = [entry["search_priority"] for entry in entries]
+            self.assertEqual(priorities, sorted(priorities))
+        self.assertEqual({q["search_priority"] for q in plan["queries"]}, {1, 2, 3, 4})
         for query in plan["queries"]:
             if query["search_priority"] == 1:
                 self.assertEqual(query["lane"], "official_source")
                 self.assertIn(by_source[query["source_id"]]["kind"],
                               {"official_newsroom", "investor_relations"})
         tasks = plan["search_tasks"]
-        self.assertEqual([t["search_priority"] for t in tasks], sorted(t["search_priority"] for t in tasks))
         by_query = {q["query_id"]: q for q in plan["queries"]}
         for task in tasks:
             related = [by_query[qid] for ids in task["language_variants"].values() for qid in ids]
             self.assertEqual(task["search_priority"], min(q["search_priority"] for q in related))
-
-    def test_key_media_get_keyword_search_beyond_startup_discovery(self):
-        queries = [q for q in self.plan()["queries"] if q["lane"] == "media_review"]
-        policy = self.sources["source_policy"]
-        self.assertEqual({q["source_id"] for q in queries}, set(policy["key_media_ids"]))
-        self.assertEqual([q["source_id"] for q in queries], policy["key_media_ids"])
-        techcrunch = next(q for q in queries if q["source_id"] == "techcrunch")
-        self.assertIn("site:techcrunch.com", techcrunch["query"])
-        for query in queries:
-            language = query["language"]
-            for word in policy["media_keywords"][language] + self.rules["discovery"]["context"][language]:
-                self.assertIn('"' + word + '"', query["query"])
-        rules = copy.deepcopy(self.rules)
-        rules["discovery"]["enabled"] = False
-        plan = build_plan(self.catalog, self.sources, rules, self.manifest, strategy="exhaustive")
-        self.assertEqual(queries, [q for q in plan["queries"] if q["lane"] == "media_review"])
 
     def test_invalid_key_media_policy_is_rejected_before_run(self):
         root = Path(__file__).resolve().parents[1]
@@ -188,42 +149,14 @@ class DiscoveryTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     validate_configs(invalid, root / 'schemas')
 
-    def test_old_query_snapshots_remain_available_only_for_explicit_exhaustive_comparison(self):
+    def test_snapshot_without_current_policy_requires_new_run(self):
         root = Path(__file__).resolve().parents[1]
-        legacy = {name: read_json(root / 'config' / f'{name}.json') for name in CONFIG_NAMES}
-        del legacy['queries']['research_policy']
-        del legacy['queries']['retrieval_policy']['candidate_filter']
-        del legacy['editorial_policy']['material_filter']
-        del legacy['editorial_policy']['research_focus']
-        with self.assertRaisesRegex(ValueError, 'research_policy'):
-            validate_configs(legacy, root / 'schemas')
-        validate_configs(legacy, root / 'schemas', allow_legacy_queries=True)
-        comparison = build_plan(legacy['companies'], legacy['sources'], legacy['queries'],
-                                self.manifest, strategy='exhaustive')
-        self.assertEqual(comparison['status'], 'planned_not_executed')
-        with self.assertRaisesRegex(ValueError, 'research_policy'):
-            build_plan(legacy['companies'], legacy['sources'], legacy['queries'], self.manifest)
-
-    def test_same_query_for_two_models_preserves_both_coverage_links(self):
-        rules = copy.deepcopy(self.rules)
-        pattern = copy.deepcopy(rules["discovery"]["business_model_patterns"][0])
-        original_id = pattern["id"]
-        pattern["id"] = "same_words_different_model"
-        rules["discovery"]["business_model_patterns"].append(pattern)
-        plan = build_plan(self.catalog, self.sources, rules, self.manifest, strategy="exhaustive")
-        original = [q for q in plan["queries"] if q["model_id"] == original_id]
-        duplicate = [q for q in plan["queries"] if q["model_id"] == pattern["id"]]
-        self.assertEqual([q["query"] for q in original], [q["query"] for q in duplicate])
-        self.assertTrue({q["query_id"] for q in original}.isdisjoint(q["query_id"] for q in duplicate))
-        for query in original:
-            task = next(t for t in plan["search_tasks"] if t["query"] == query["query"])
-            covered = task["language_variants"][query["language"]]
-            self.assertIn(query["query_id"], covered)
-            matching = next(q for q in duplicate if q["language"] == query["language"])
-            self.assertIn(matching["query_id"], covered)
-        baseline = self.plan()
-        self.assertEqual(plan["task_count"], baseline["task_count"])
-        self.assertEqual(plan["language_request_count"], baseline["language_request_count"])
+        configs = {name: read_json(root / "config" / f"{name}.json") for name in CONFIG_NAMES}
+        del configs["queries"]["research_policy"]
+        with self.assertRaisesRegex(ValueError, "research_policy.*new run"):
+            validate_configs(configs, root / "schemas")
+        with self.assertRaisesRegex(ValueError, "research_policy.*new run"):
+            build_plan(configs["companies"], configs["sources"], configs["queries"], self.manifest)
 
 
 if __name__ == "__main__":

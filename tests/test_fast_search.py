@@ -44,8 +44,6 @@ class FastSearchTests(unittest.TestCase):
         self.assertIn('VK Dating', vk_en['query'])
         world = [x for x in plan['queries'] if x['source_id'] == 'world_blog']
         self.assertTrue(all('dating' in x['query'] for x in world))
-        assigned = [qid for t in plan['search_tasks'] for ids in t['language_variants'].values() for qid in ids]
-        self.assertCountEqual(assigned, [x['query_id'] for x in plan['queries']])
         self.assertTrue(all(x['status'] == 'planned' for x in plan['coverage']))
         blog = next(source for source in s['sources'] if source['id'] == 'bumble_buzz')
         s['sources'].append(blog | {'id': 'shared_newsroom', 'kind': 'official_newsroom'})

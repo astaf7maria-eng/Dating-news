@@ -14,6 +14,7 @@ from uuid import uuid4
 from .domain.context import build_context_bundle, index_by_id, json_sha256
 from .domain.window import date_window
 from .discovery.plan import build_plan
+from .discovery.queries import require_fast_policy
 from .io import read_json, write_json
 from .orchestration.period import choose_period
 from .storage import archive_run
@@ -21,10 +22,13 @@ from .storage import archive_run
 CONFIG_NAMES = ("business_context", "editorial_policy", "pipeline", "companies", "sources", "queries", "golden_set")
 
 
-def validate_configs(configs: dict, schema_dir: Path = Path("schemas"), *,
-                     allow_legacy_queries: bool = False) -> None:
+def validate_configs(configs: dict, schema_dir: Path = Path("schemas")) -> None:
     """Check config links and scoring contracts before creating artifacts."""
+    missing = set(CONFIG_NAMES) - configs.keys()
+    if missing:
+        raise ValueError("Missing run configurations: " + ", ".join(sorted(missing)))
     catalog, rules = configs["companies"], configs["queries"]
+    require_fast_policy(rules)
     companies = index_by_id(catalog["companies"], "company")
     sources = index_by_id(configs["sources"]["sources"], "source")
     if any(not isinstance(rules[key], dict) for key in ("company_profiles", "category_signals")):
@@ -71,95 +75,86 @@ def validate_configs(configs: dict, schema_dir: Path = Path("schemas"), *,
         if (language not in rules["discovery"]["context"] or not isinstance(keywords, list)
                 or not keywords or any(not isinstance(word, str) or not word.strip() for word in keywords)):
             raise ValueError(f"Missing key media keywords or dating context: {source_id}")
-    focus = rules.get("research_policy", {})
-    screening = None
-    directions = []
-    if not focus and not allow_legacy_queries:
-        raise ValueError("Снимок queries не содержит research_policy; создайте новый запуск или используйте exhaustive")
-    if focus:
-        directions = focus.get("primary_directions", [])
-        vocabulary = focus.get("directions", {})
-        references(directions, vocabulary, "primary direction")
-        if not directions or len(directions) != len(set(directions)):
-            raise ValueError("Primary directions must be nonempty and unique")
-        references(focus.get("secondary_sections"), rules["category_signals"], "secondary section")
-        languages = (set(rules["languages"]) | {lang for c in companies.values() for lang in c["search_languages"]}
-                     | {sources[sid]["language"] for sid in media_ids})
-        for language in languages:
-            terms = rules["company_query_policy"].get("event_terms", {}).get(language)
+    focus = rules["research_policy"]
+    directions = focus.get("primary_directions", [])
+    vocabulary = focus.get("directions", {})
+    references(directions, vocabulary, "primary direction")
+    if not directions or len(directions) != len(set(directions)):
+        raise ValueError("Primary directions must be nonempty and unique")
+    references(focus.get("secondary_sections"), rules["category_signals"], "secondary section")
+    languages = (set(rules["languages"]) | {lang for c in companies.values() for lang in c["search_languages"]}
+                 | {sources[sid]["language"] for sid in media_ids})
+    for language in languages:
+        terms = rules["company_query_policy"].get("event_terms", {}).get(language)
+        if (not isinstance(terms, list) or not terms
+                or any(not isinstance(term, str) or not term.strip() for term in terms)):
+            raise ValueError(f"Missing company event terms: {language}")
+    intents = rules["search_intents"]
+    external = rules["external_search"]
+    if not isinstance(intents, dict) or "product_change" not in intents or not isinstance(external, dict):
+        raise ValueError("Search intents and external search policy must be configured together")
+    references(external.get("intents"), intents, "external search intent")
+    references(external.get("first_pass_intents"), external["intents"], "external first-pass intent")
+    references(external.get("first_pass_languages"), external.get("contexts", {}), "external search language")
+    if not external["intents"] or not external["first_pass_languages"]:
+        raise ValueError("External search needs intents and first-pass languages")
+    if any(not isinstance(definition, dict) for definition in intents.values()):
+        raise ValueError("Search intent definitions must be objects")
+    for language in languages | set(external["first_pass_languages"]):
+        context = external.get("contexts", {}).get(language)
+        if not isinstance(context, str) or not context.strip():
+            raise ValueError(f"Missing external dating context: {language}")
+        for intent, definition in intents.items():
+            terms = definition.get("terms", {}).get(language)
             if (not isinstance(terms, list) or not terms
                     or any(not isinstance(term, str) or not term.strip() for term in terms)):
-                raise ValueError(f"Missing company event terms: {language}")
-        if "search_intents" in rules or "external_search" in rules:
-            intents = rules.get("search_intents", {})
-            external = rules.get("external_search", {})
-            if not isinstance(intents, dict) or "product_change" not in intents or not isinstance(external, dict):
-                raise ValueError("Search intents and external search policy must be configured together")
-            references(external.get("intents"), intents, "external search intent")
-            references(external.get("first_pass_intents"), external["intents"], "external first-pass intent")
-            references(external.get("first_pass_languages"), external.get("contexts", {}), "external search language")
-            if not external["intents"] or not external["first_pass_languages"]:
-                raise ValueError("External search needs intents and first-pass languages")
-            if any(not isinstance(definition, dict) for definition in intents.values()):
-                raise ValueError("Search intent definitions must be objects")
-            for language in languages | set(external["first_pass_languages"]):
-                context = external.get("contexts", {}).get(language)
-                if not isinstance(context, str) or not context.strip():
-                    raise ValueError(f"Missing external dating context: {language}")
-                for intent, definition in intents.items():
-                    terms = definition.get("terms", {}).get(language)
-                    if (not isinstance(terms, list) or not terms
-                            or any(not isinstance(term, str) or not term.strip() for term in terms)):
-                        raise ValueError(f"Missing intent terms: {intent}/{language}")
-            for intent, definition in intents.items():
-                if type(definition.get("outside_official")) is not bool:
-                    raise ValueError(f"Invalid external-domain flag: {intent}")
-            if any(not intents[intent]["outside_official"] for intent in external["intents"]):
-                raise ValueError("External search intents must exclude official company domains")
-            review_rule = source_policy.get("index_review")
-            if not isinstance(review_rule, str) or not review_rule.strip():
-                raise ValueError("Missing source index review policy")
+                raise ValueError(f"Missing intent terms: {intent}/{language}")
+    for intent, definition in intents.items():
+        if type(definition.get("outside_official")) is not bool:
+            raise ValueError(f"Invalid external-domain flag: {intent}")
+    if any(not intents[intent]["outside_official"] for intent in external["intents"]):
+        raise ValueError("External search intents must exclude official company domains")
+    review_rule = source_policy.get("index_review")
+    if not isinstance(review_rule, str) or not review_rule.strip():
+        raise ValueError("Missing source index review policy")
+    for direction in directions:
+        definition = vocabulary[direction]
+        references(definition["section_ids"], rules["category_signals"], "direction section")
+        for language in languages:
+            terms = definition.get("terms", {}).get(language)
+            if (not isinstance(terms, list) or not terms
+                    or any(not isinstance(term, str) or not term.strip() for term in terms)):
+                raise ValueError(f"Missing event terms: {direction}/{language}")
+    for item in rules["discovery"]["native_language_queries"]:
         for direction in directions:
-            definition = vocabulary[direction]
-            references(definition["section_ids"], rules["category_signals"], "direction section")
-            for language in languages:
-                terms = definition.get("terms", {}).get(language)
-                if (not isinstance(terms, list) or not terms
-                        or any(not isinstance(term, str) or not term.strip() for term in terms)):
-                    raise ValueError(f"Missing event terms: {direction}/{language}")
-        for item in rules["discovery"]["native_language_queries"]:
-            for direction in directions:
-                query = item.get("direction_queries", {}).get(direction)
-                if not isinstance(query, str) or not query.strip():
-                    raise ValueError(f"Missing native event query: {item['id']}/{direction}")
-        references(list(rules.get("company_event_hints", {})), companies, "event hint company")
-        for cid, hints in rules.get("company_event_hints", {}).items():
-            if not set(hints) <= set(companies[cid]["search_languages"]):
-                raise ValueError(f"Event hint language is not enabled: {cid}")
-            for phrases in hints.values():
-                if (not isinstance(phrases, list) or not phrases
-                        or any(not isinstance(phrase, str) or not phrase.strip() for phrase in phrases)):
-                    raise ValueError(f"Invalid event hints: {cid}")
-        screening = rules["retrieval_policy"]["candidate_filter"]
-        if not screening["excluded_types"] or not screening["title_rules"]:
-            raise ValueError("Candidate filter must define types and title rules")
-        for rule in screening["title_rules"]:
-            references([rule["reason"]], screening["excluded_types"], "filter reason")
-            try:
-                re.compile(rule["pattern"], re.IGNORECASE)
-            except re.error as error:
-                raise ValueError(f"Invalid candidate filter pattern: {error}") from error
-    if "editorial_policy" not in configs:  # Legacy plans only supplied the catalog.
-        return
+            query = item.get("direction_queries", {}).get(direction)
+            if not isinstance(query, str) or not query.strip():
+                raise ValueError(f"Missing native event query: {item['id']}/{direction}")
+    references(list(rules.get("company_event_hints", {})), companies, "event hint company")
+    for cid, hints in rules.get("company_event_hints", {}).items():
+        if not set(hints) <= set(companies[cid]["search_languages"]):
+            raise ValueError(f"Event hint language is not enabled: {cid}")
+        for phrases in hints.values():
+            if (not isinstance(phrases, list) or not phrases
+                    or any(not isinstance(phrase, str) or not phrase.strip() for phrase in phrases)):
+                raise ValueError(f"Invalid event hints: {cid}")
+    screening = rules["retrieval_policy"]["candidate_filter"]
+    if not screening["excluded_types"] or not screening["title_rules"]:
+        raise ValueError("Candidate filter must define types and title rules")
+    for rule in screening["title_rules"]:
+        references([rule["reason"]], screening["excluded_types"], "filter reason")
+        try:
+            re.compile(rule["pattern"], re.IGNORECASE)
+        except re.error as error:
+            raise ValueError(f"Invalid candidate filter pattern: {error}") from error
     storage = configs["pipeline"].get("storage", {})
     if not isinstance(storage, dict) or not isinstance(storage.get("article_archive_dir", "article"), str) or not storage.get("article_archive_dir", "article").strip():
         raise ValueError("storage.article_archive_dir must be a nonempty path string")
     policy = configs["editorial_policy"]
-    if screening is not None:
-        if set(policy["material_filter"]["excluded_types"]) != set(screening["excluded_types"]):
-            raise ValueError("Search and editorial material filters differ")
-        if policy["research_focus"]["primary_directions"] != directions:
-            raise ValueError("Search and editorial research directions differ")
+    if set(policy["material_filter"]["excluded_types"]) != set(screening["excluded_types"]):
+        raise ValueError("Search and editorial material filters differ")
+    if policy["research_focus"]["primary_directions"] != directions:
+        raise ValueError("Search and editorial research directions differ")
     sections = index_by_id(policy["sections"], "editorial section")
     event, digest = [read_json(schema_dir / f"{name}.schema.json") for name in ("event", "digest")]
     if not (set(sections) == set(rules["category_signals"]) == set(event["properties"]["section_id"]["enum"])
@@ -197,9 +192,8 @@ def main() -> None:
     init.add_argument("--start-date", type=date.fromisoformat, help="Explicit start date, YYYY-MM-DD")
     init.add_argument("--end-date", type=date.fromisoformat, help="Explicit inclusive end date, YYYY-MM-DD")
     init.add_argument("--data-dir", type=Path, default=Path("data"))
-    plan = commands.add_parser("plan-search", help="Save a plan for a confirmed run; no network")
+    plan = commands.add_parser("plan-search", help="Save the fast source-first plan from run snapshots; no network")
     plan.add_argument("--run-dir", type=Path, required=True)
-    plan.add_argument("--strategy", choices=("fast", "exhaustive"), default="fast")
     archive = commands.add_parser("archive-articles", help="Archive staged articles by publication date, preserving existing files")
     archive.add_argument("--run-dir", type=Path, required=True)
     archive.add_argument("--archive-dir", type=Path, help="Persistent archive; defaults to the run setting or ./article")
@@ -208,9 +202,8 @@ def main() -> None:
     extract.add_argument("--metadata", type=Path, required=True, help="Verified url, source_id, dates and company_ids as JSON")
     extract.add_argument("--output", type=Path, required=True, help="New Article JSON, normally run_dir/articles/<id>.json")
     extract.add_argument("--tags", nargs="+", choices=("features", "monetization", "trust_safety", "ai", "new_models", "business", "marketing"))
-    for command in (init, plan):
-        command.add_argument("--config-dir", type=Path, default=Path("config"),
-                             help="Config directory; plan-search uses it only for legacy runs")
+    init.add_argument("--config-dir", type=Path, default=Path("config"),
+                      help="Configuration directory to freeze in the new run")
     args = parser.parse_args()
 
     if args.command == "extract-page":
@@ -237,36 +230,25 @@ def main() -> None:
     if args.command == "plan-search":
         try:
             manifest = read_json(args.run_dir / "manifest.json")
-            bundle_path = args.run_dir / "context_bundle.json"
-            bundle = read_json(bundle_path) if bundle_path.exists() else None
-            version = manifest["schema_version"]
-            if version == "0.5":
-                snapshots = {name: read_json(args.run_dir / "config_snapshot" / f"{name}.json") for name in CONFIG_NAMES}
-                if manifest.get("config_sha256") != {name: json_sha256(value) for name, value in snapshots.items()}:
-                    raise ValueError("Configuration snapshot differs from manifest; create a new run")
-                if not manifest.get("business_context") or bundle is None or snapshots["business_context"] != bundle["business_context"]:
-                    raise ValueError("Run context snapshot is missing or inconsistent; create a new run")
-            elif version in {"0.3", "0.4"}:
-                snapshots = {name: read_json(args.config_dir / f"{name}.json") for name in ("companies", "sources", "queries")}
-            else:
-                raise ValueError(f"Unsupported manifest version: {version}")
-            validate_configs(snapshots, allow_legacy_queries=args.strategy == "exhaustive")
-            result = build_plan(snapshots["companies"], snapshots["sources"], snapshots["queries"], manifest, bundle,
-                                strategy=args.strategy)
-            result["catalog_origin"] = "run_snapshot" if version == "0.5" else "live_legacy"
+            if manifest.get("schema_version") != "0.5":
+                raise ValueError("Run has no supported frozen configuration; create a new run")
+            bundle = read_json(args.run_dir / "context_bundle.json")
+            snapshots = {name: read_json(args.run_dir / "config_snapshot" / f"{name}.json") for name in CONFIG_NAMES}
+            if manifest.get("config_sha256") != {name: json_sha256(value) for name, value in snapshots.items()}:
+                raise ValueError("Configuration snapshot differs from manifest; create a new run")
+            if not manifest.get("business_context") or snapshots["business_context"] != bundle["business_context"]:
+                raise ValueError("Run context snapshot is missing or inconsistent; create a new run")
+            validate_configs(snapshots)
+            result = build_plan(snapshots["companies"], snapshots["sources"], snapshots["queries"], manifest, bundle)
+            result["catalog_origin"] = "run_snapshot"
             write_json(args.run_dir / "search_plan.json", result)
         except (OSError, ValueError, KeyError, TypeError) as exc:
             parser.error(str(exc))
         print(f"Saved {result['query_count']} coverage queries in {result['task_count']} search tasks "
               f"({result['language_request_count']} separate language requests before provider optimization); "
               "no search has run.")
-        if result.get("strategy") == "fast":
-            print(f"First pass: {result['initial_query_count']} short queries plus "
-                  f"{len(result['source_indexes'])} source indexes; remaining queries only for measured gaps.")
-        if result["catalog_origin"] == "live_legacy":
-            print("Legacy run uses the current catalog. Create a new run to freeze all inputs.")
-        if bundle is None:
-            print("Legacy run has no saved product context for so what.")
+        print(f"First pass: {result['initial_query_count']} short queries plus "
+              f"{len(result['source_indexes'])} source indexes; remaining queries only for measured gaps.")
         return
 
     if (args.start_date is None) != (args.end_date is None):

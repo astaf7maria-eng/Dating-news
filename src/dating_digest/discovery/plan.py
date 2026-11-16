@@ -10,13 +10,7 @@ from urllib.parse import urlsplit, urlunsplit
 from dating_digest.domain.window import validate_window
 from dating_digest.domain.context import validate_context_bundle
 from dating_digest.storage.archive import normalize_url
-from dating_digest.discovery.queries import build_followup_query, company_search_name
-
-
-def _or(terms: list[str]) -> str:
-    if not terms:
-        raise ValueError("Search group must contain at least one term")
-    return "(" + " OR ".join('"' + term.replace('"', '') + '"' for term in dict.fromkeys(terms)) + ")"
+from dating_digest.discovery.queries import build_followup_query, company_search_name, require_fast_policy
 
 
 def _base_plan(catalog: dict, sources: dict, rules: dict, manifest: dict,
@@ -45,7 +39,7 @@ def _base_plan(catalog: dict, sources: dict, rules: dict, manifest: dict,
             raise ValueError(f"Invalid source URL: {source['id']}")
 
     result = {
-        "schema_version": "0.9", "run_id": manifest["run_id"],
+        "schema_version": "1.1", "strategy": "fast", "run_id": manifest["run_id"],
         "window_start": start.isoformat(), "window_end_exclusive": end.isoformat(),
         "timezone": "Europe/Moscow", "status": "planned_not_executed",
         "business_context_usage": "so_what_only_no_revalidation",
@@ -70,129 +64,12 @@ def _base_plan(catalog: dict, sources: dict, rules: dict, manifest: dict,
     return result
 
 
-def _build_exhaustive_plan(catalog: dict, sources: dict, rules: dict, result: dict) -> dict:
-    companies = [c for c in catalog["companies"] if c["enabled"]]
-    queries, seen = [], set()
-
-    def add(lane, language, family, query, company_ids=(), source_id=None, model_id=None,
-            decision_id=None):
-        identity = f"{lane}|{language}|{family}|{query}|{','.join(company_ids)}|{source_id}|{model_id}|{decision_id}"
-        query_id = sha256(identity.encode("utf-8")).hexdigest()[:20]
-        if query_id in seen:
-            return
-        seen.add(query_id)
-        queries.append({
-            "query_id": query_id, "lane": lane, "language": language,
-            "family": family, "query": query, "company_ids": list(company_ids),
-            "source_id": source_id, "model_id": model_id, "status": "planned",
-            "decision_id": decision_id,
-        })
-
-    for company in companies:
-        for language in company["search_languages"]:
-            base = _or([company["name"], *company["aliases"]])
-            context = company.get("disambiguation_terms", {}).get(language, [])
-            if context:
-                base += " " + _or(context)
-            add("company", language, "baseline", base, [company["id"]])
-            profile = rules["company_profiles"][company["tier"]]
-            for section in profile["thematic_sections"]:
-                terms = rules["category_signals"][section].get(language)
-                if terms:
-                    add("company", language, section, base + " " + _or(terms), [company["id"]])
-
-    by_id = {c["id"]: c for c in companies}
-    source_policy = sources.get("source_policy", {})
-    key_media = source_policy.get("key_media_ids", [])
-    for source in sources["sources"]:
-        if not source["enabled"]:
-            continue
-        ids = [c for c in source.get("company_ids", []) if c in by_id]
-        host = urlsplit(source["url"]).hostname
-        if ids and (source["kind"].startswith("official_") or source["kind"] == "investor_relations"):
-            # No launch-only filter: reports, surveys and policies also matter.
-            names = [alias for cid in ids for alias in [by_id[cid]["name"], *by_id[cid]["aliases"]]]
-            add("official_source", source["language"], "source_lookup",
-                f"site:{host} " + _or(list(dict.fromkeys(names))), ids, source["id"])
-
-    discovery = rules["discovery"]
-    for source in sources["sources"]:
-        if source["enabled"] and source["id"] in key_media:
-            language = source["language"]
-            host = urlsplit(source["url"]).hostname
-            add("media_review", language, "keyword_lookup",
-                f"site:{host} {_or(discovery['context'][language])} "
-                + _or(source_policy["media_keywords"][language]), source_id=source["id"])
-
-    if discovery["enabled"]:
-        for language in rules["languages"]:
-            context = _or(discovery["context"][language])
-            novelty = _or(discovery["novelty_signals"][language])
-            for pattern in discovery["business_model_patterns"]:
-                add("discovery", language, "new_models",
-                    f"{context} {_or(pattern['phrases'][language])} {novelty}", model_id=pattern["id"])
-            # Broad query finds mechanisms outside our predefined model vocabulary.
-            add("discovery", language, "new_models", f"{context} {novelty}", model_id="open_ended")
-        for item in discovery["native_language_queries"]:
-            add("discovery", item["language"], "new_models", item["query"], model_id=item["id"])
-        for source in sources["sources"]:
-            if source["enabled"] and source["id"] in discovery["source_seed_ids"]:
-                host = urlsplit(source["url"]).hostname
-                add("discovery", source["language"], "new_models",
-                    f"site:{host} " + _or(["dating startup", "new dating app", "matchmaking launch"]),
-                    source_id=source["id"], model_id="industry_source")
-        for item in discovery.get("risk_queries", []):
-            add("risk_monitoring", item["language"], "trust_safety", item["query"])
-
-    # Official media/IR pages first, other official pages next, then key media.
-    # Broad search stays mandatory and can find facts absent from company PR.
-    source_by_id = {source["id"]: source for source in sources["sources"]}
-    for query in queries:
-        kind = source_by_id.get(query["source_id"], {}).get("kind")
-        if query["lane"] == "official_source":
-            query["search_priority"] = 1 if kind in {"official_newsroom", "investor_relations"} else 2
-        else:
-            query["search_priority"] = 3 if query["source_id"] in key_media else 4
-    media_order = {source_id: index for index, source_id in enumerate(key_media)}
-    queries.sort(key=lambda query: (query["search_priority"], media_order.get(query["source_id"], 0)))
-
-    # Keep editorial coverage identities separate from retrieval work. Identical
-    # text shares a task, but different language filters remain distinct requests.
-    # Providers may combine those variants only if every language is supported.
-    tasks = {}
-    for query in queries:
-        task = tasks.setdefault(query["query"], {
-            "task_id": sha256(
-                f"{result['window_start']}|{result['window_end_exclusive']}|{query['query']}".encode("utf-8")
-            ).hexdigest()[:20],
-            "query": query["query"], "search_priority": query["search_priority"], "language_variants": {},
-        })
-        task["language_variants"].setdefault(query["language"], []).append(query["query_id"])
-
-    result.update(queries=queries, query_count=len(queries), search_tasks=list(tasks.values()),
-                  task_count=len(tasks),
-                  language_request_count=sum(len(task["language_variants"]) for task in tasks.values()))
-    for company in result["coverage"]:
-        company["query_ids"] = [q["query_id"] for q in queries if company["company_id"] in q["company_ids"]]
-    return result
-
-
 def build_plan(catalog: dict, sources: dict, rules: dict, manifest: dict,
-               context_bundle: dict | None = None, *, strategy: str = "fast") -> dict:
-    """Review sources first, then resolve event/company gaps, without I/O.
-
-    Both strategies share snapshot/context validation. Only the selected query
-    set is constructed; the exhaustive plan remains available for comparisons.
-    """
-    if strategy not in {"fast", "exhaustive"}:
-        raise ValueError(f"Unknown search strategy: {strategy}")
+               context_bundle: dict | None = None) -> dict:
+    """Build the source-first plan used by collect-news-fast.md; no network."""
+    require_fast_policy(rules)
     result = _base_plan(catalog, sources, rules, manifest, context_bundle)
-    if strategy == "exhaustive":
-        return _build_exhaustive_plan(catalog, sources, rules, result)
-
-    focus = rules.get("research_policy")
-    if not focus:
-        raise ValueError("Снимок queries не содержит research_policy; создайте новый запуск или используйте exhaustive для старого плана")
+    focus = rules["research_policy"]
     directions = focus["primary_directions"]
     vocabulary = focus["directions"]
     companies = [c for c in catalog["companies"] if c["enabled"]]
@@ -229,7 +106,7 @@ def build_plan(catalog: dict, sources: dict, rules: dict, manifest: dict,
 
     # Source reviews can satisfy several brands and directions at once. None
     # of these fallbacks is an instruction to execute a Cartesian product.
-    external = rules.get("external_search", {})
+    external = rules["external_search"]
     for c in companies:
         primary = primary_language(c)
         for lang in sorted(c["search_languages"], key=lambda value: value != primary):
@@ -238,12 +115,11 @@ def build_plan(catalog: dict, sources: dict, rules: dict, manifest: dict,
                 query_spec["query"], query_spec=query_spec,
                 company_ids=[c["id"]],
                 trigger="company_not_checked" if lang == primary else "language_not_checked")
-        if external:
-            query_spec = build_followup_query(result, language=primary, intent="interview", company_id=c["id"])
-            add("external_company", primary, "external_lookup", query_spec["query"],
-                company_ids=[c["id"]], query_spec=query_spec,
-                trigger="external_source_gap_or_interview_result_signal")
-            queries[-1]["intent_options"] = external["intents"]
+        query_spec = build_followup_query(result, language=primary, intent="interview", company_id=c["id"])
+        add("external_company", primary, "external_lookup", query_spec["query"],
+            company_ids=[c["id"]], query_spec=query_spec,
+            trigger="external_source_gap_or_interview_result_signal")
+        queries[-1]["intent_options"] = external["intents"]
 
     policy = sources.get("source_policy", {})
     media_ids = policy.get("key_media_ids", [])
@@ -306,7 +182,7 @@ def build_plan(catalog: dict, sources: dict, rules: dict, manifest: dict,
             for direction in directions:
                 add("discovery", item["language"], "event_discovery", item["direction_queries"][direction],
                     phase="first_pass", direction_id=direction, model_id=item["id"])
-        for language in external.get("first_pass_languages", []):
+        for language in external["first_pass_languages"]:
             for intent in external["first_pass_intents"]:
                 query_spec = build_followup_query(result, language=language, intent=intent)
                 add("external_discovery", language, intent, query_spec["query"],
@@ -331,7 +207,7 @@ def build_plan(catalog: dict, sources: dict, rules: dict, manifest: dict,
         ).hexdigest()[:20], "query": q["query"], "phase": q["phase"],
             "search_priority": q["search_priority"], "language_variants": {}})
         task["language_variants"].setdefault(q["language"], []).append(q["query_id"])
-    result.update(schema_version="1.1" if external else "1.0", strategy="fast", queries=queries, query_count=len(queries),
+    result.update(queries=queries, query_count=len(queries),
                   search_tasks=list(tasks.values()), task_count=len(tasks),
                   language_request_count=sum(len(t["language_variants"]) for t in tasks.values()),
                   initial_query_count=sum(q["phase"] == "first_pass" for q in queries),
@@ -368,11 +244,10 @@ def build_plan(catalog: dict, sources: dict, rules: dict, manifest: dict,
                 "request_timeout_seconds": 25, "transient_retries": 1, "cache_max_age_seconds": 86400},
         language_evidence="No hard filter: record actual phrase and observed result languages; a shared brand/group query never proves every member or language.",
         completion="Conditional tasks are not executed coverage. Save pending targets and reasons at deadline; a request target is not a quality quota.")
-    if external:
-        result["execution_policy"].update(
-            external_search=external,
-            source_review=sources["source_policy"]["index_review"],
-            source_review_log="raw/source_reviews.jsonl",
-            new_companies="Keep newly found names, mechanics and sources in discovery_candidates using the snapshot candidate_fields; company_name follow-ups work before catalog promotion.",
-        )
+    result["execution_policy"].update(
+        external_search=external,
+        source_review=sources["source_policy"]["index_review"],
+        source_review_log="raw/source_reviews.jsonl",
+        new_companies="Keep newly found names, mechanics and sources in discovery_candidates using the snapshot candidate_fields; company_name follow-ups work before catalog promotion.",
+    )
     return result

@@ -74,6 +74,21 @@ class ConfigAndWriteTests(unittest.TestCase):
             self.assertEqual(read_json(path), {"winner": True})
             self.assertEqual(list(path.parent.iterdir()), [path])
 
+    def test_utf8_json_roundtrip_preserves_source_and_cyrillic(self):
+        """Serialization of existing text; no event generation or translation."""
+        source = {"text": "日本語の原文。", "language": "ja"}
+        card = {"headline": "Русская карточка", "evidence_quote": source["text"]}
+        with tempfile.TemporaryDirectory() as directory:
+            source_path, card_path = Path(directory) / "source.json", Path(directory) / "card.json"
+            write_json(source_path, source)
+            original_bytes = source_path.read_bytes()
+            write_json(card_path, card)
+            self.assertEqual(read_json(source_path), source)
+            self.assertEqual(read_json(card_path), card)
+            self.assertEqual(source_path.read_bytes(), original_bytes)
+            for path, text in ((source_path, source["text"]), (card_path, card["headline"])):
+                self.assertIn(text.encode("utf-8"), path.read_bytes())
+
 
 class PeriodConversationTests(unittest.TestCase):
     as_of = datetime.fromisoformat("2026-11-15T12:00:00+03:00")

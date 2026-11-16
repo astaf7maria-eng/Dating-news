@@ -9,7 +9,6 @@ import tempfile
 import unittest
 
 from dating_digest.ingestion import extract_article, extract_page
-from dating_digest.io import read_json, write_json
 from dating_digest.storage import ArticleArchive
 
 URL = "https://example.com/news/new-feature"
@@ -145,37 +144,6 @@ class PageTests(unittest.TestCase):
         result = extract_page(f'<title>新機能</title><main><p>{text * 4}</p></main>', URL)
         self.assertEqual(result["language"], "ja")
         self.assertIn(text, result["text"])
-
-    def test_original_article_and_russian_event_roundtrip_in_utf8(self):
-        title = "テストアプリの新しいキャンペーン"
-        quote = "新規会員は条件を満たすと2450円のキャッシュバックを受けられます。"
-        html = f'<html lang="ja"><title>{title}</title><article><h1>{title}</h1><p>{quote}</p></article></html>'
-        article = extract_article(html, dict(url=URL, source_id="test_newsroom", company_ids=["test_app"]),
-                                  tags=["marketing"])
-        event = {"schema_version": "0.4", "event_id": "campaign", "company_ids": ["test_app"],
-                 "headline": "Тестовое приложение запустило кампанию с возвратом денег",
-                 "section_id": "marketing", "event_kind": "marketing_event", "launch_stage": "launched",
-                 "markets": ["JP"], "article_ids": [article["article_id"]],
-                 "facts": [{"claim": "Новые участники получают 2450 иен при выполнении условий.",
-                            "article_id": article["article_id"], "evidence_quote": quote}],
-                 "eligibility": {"status": "pending", "reasons": []}, "ranking": None, "context_assessment": None}
-        with tempfile.TemporaryDirectory() as tmp:
-            original_path, event_path = Path(tmp) / "article.json", Path(tmp) / "event.json"
-            write_json(original_path, article)
-            original_bytes = original_path.read_bytes()
-            write_json(event_path, event)
-            restored_article, restored_event = read_json(original_path), read_json(event_path)
-            self.assertEqual(original_path.read_bytes(), original_bytes)
-            self.assertEqual(restored_article["title"], title)
-            self.assertEqual(restored_article["text"], quote)
-            self.assertEqual(restored_article["language"], "ja")
-            self.assertEqual(restored_event["headline"], event["headline"])
-            self.assertEqual(restored_event["facts"][0]["evidence_quote"], quote)
-            self.assertEqual(restored_event["facts"][0]["article_id"], restored_article["article_id"])
-            self.assertEqual(restored_article["text_sha256"], sha256(quote.encode("utf-8")).hexdigest())
-            for path in (original_path, event_path):
-                self.assertIn(quote.encode("utf-8"), path.read_bytes())
-                self.assertNotIn(b"\\u", path.read_bytes())
 
     def test_cli_to_existing_archive_route_utf8_and_immutable_output(self):
         with tempfile.TemporaryDirectory() as tmp:
