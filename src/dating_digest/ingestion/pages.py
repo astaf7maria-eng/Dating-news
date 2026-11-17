@@ -5,11 +5,13 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from hashlib import sha256
 import json
+from pathlib import Path
 import re
 import unicodedata
 from urllib.parse import urljoin, urlsplit
 
 from dating_digest.storage.archive import normalize_url
+from dating_digest.io import write_json
 
 TAGS = ("features", "monetization", "trust_safety", "ai", "new_models", "business", "marketing")
 BODY_SELECTORS = (
@@ -296,6 +298,10 @@ def extract_article(html: str, metadata: dict, *, tags: list[str] | None = None)
     Dates, source/company IDs and thematic tags are supplied by the session.
     Missing publication dates remain unknown; this function never guesses them.
     """
+    return _build_article(extract_page(html, metadata["url"]), metadata, tags)
+
+
+def _build_article(extracted: dict, metadata: dict, tags: list[str] | None) -> dict:
     value = dict(metadata)
     value["url"] = normalize_url(value["url"])
     if not isinstance(value.get("source_id"), str) or not value["source_id"].strip():
@@ -303,7 +309,7 @@ def extract_article(html: str, metadata: dict, *, tags: list[str] | None = None)
     selected_tags = tags if tags is not None else value.get("tags", [])
     if not isinstance(selected_tags, list) or any(tag not in TAGS for tag in selected_tags):
         raise ValueError("tags must contain only thematic group IDs: " + ", ".join(TAGS))
-    value.update(extract_page(html, value["url"]))
+    value.update(extracted)
     if not value["title"]:
         raise ValueError("Publication title not found; inspect HTML and supply a corrected extraction")
     value.setdefault("schema_version", "0.1")
@@ -315,3 +321,56 @@ def extract_article(html: str, metadata: dict, *, tags: list[str] | None = None)
     value.setdefault("company_ids", [])
     value["tags"] = list(dict.fromkeys(selected_tags))
     return value
+
+
+def save_html_article(html_path: Path, metadata: dict, output: Path, *, tags: list[str] | None = None) -> dict:
+    """Extract an already saved page, including recovery after an interrupted fetch."""
+    article = extract_article(html_path.read_text(encoding="utf-8-sig"), metadata, tags=tags)
+    article["raw_path"] = str(html_path)
+    write_json(output, article)
+    return article
+
+
+def extract_provider_article(pages: list[str], metadata: dict, *, first_line: int, last_line: int,
+                             tags: list[str] | None = None, quality_issues: list[str] | None = None) -> dict:
+    """Import an explicitly reviewed range of original numbered provider text.
+
+    Each entry is one source page or continuation, not a union of search results.
+    The caller supplies verified title, language, dates and raw_path/provenance.
+    Missing lines and rewritten views remain partial; conflicting continuations fail.
+    """
+    if (type(first_line) is not int or type(last_line) is not int
+            or not 0 <= first_line <= last_line or not pages):
+        raise ValueError("Provide source pages and an ordered nonnegative line range")
+    if not all(isinstance(metadata.get(key), str) and metadata[key].strip()
+               for key in ("title", "language", "raw_path")):
+        raise ValueError("Provider text needs verified title, language and raw_path")
+    lines, issues = {}, list(quality_issues or [])
+    for page in pages:
+        header = page.splitlines()[0] if page.splitlines() else ""
+        if "rewritten summary" in header.casefold():
+            issues.append("provider_rewritten_view_requires_original")
+        for match in re.finditer(r"^L(\d+)(?:@P[\d-]+)?: ?(.*)$", page, re.M):
+            number, value = int(match[1]), match[2]
+            if number in lines and lines[number] != value:
+                raise ValueError(f"Conflicting source text at line {number}")
+            lines[number] = value
+    missing = [number for number in range(first_line, last_line + 1) if number not in lines]
+    if missing:
+        issues.append("provider_missing_body_lines")
+    parts = [lines[number] for number in range(first_line, last_line + 1) if number in lines
+             and not re.fullmatch(r"【\d+†Image[^】]*】", lines[number])]
+    text = re.sub(r"【\d+†([^】†]+)(?:†[^】]+)?】", r"\1", "\n".join(parts)).strip()
+    issues = list(dict.fromkeys(issues))
+    extracted = dict(title=metadata["title"], language=metadata["language"],
+                     canonical_url=normalize_url(metadata.get("canonical_url", metadata["url"])),
+                     text=text or None, text_sha256=sha256(text.encode("utf-8")).hexdigest() if text else None,
+                     extraction_status="unavailable" if not text else "partial" if issues else "full",
+                     extraction_method="provider_numbered_original_v1", extraction_error="; ".join(issues) or None,
+                     extraction_diagnostics=dict(quality_issues=issues, paragraph_count=len(parts)))
+    article = _build_article(extracted, metadata, tags)
+    article["provenance"] = dict(metadata.get("provenance", {}), body_line_start=first_line,
+                                 body_line_end=last_line, missing_lines=missing,
+                                 provider_pages_sha256=sha256(json.dumps(pages, ensure_ascii=False).encode("utf-8")).hexdigest(),
+                                 limitations="Original provider text; completeness of the chosen range requires source-based review.")
+    return article

@@ -5,9 +5,16 @@
 материалов допуск определяется тематикой, периодом и качеством источников.
 
 Редакционный маршрут продолжает поиск, обработку страниц, архив и QA исследования.
-Исходный пользовательский промпт сохранён в [dating-market-digest.md](../prompts/dating-market-digest.md).
+Рабочее задание — [dating-market-digest.md](../prompts/dating-market-digest.md). Исходный запрос сохранён в docs/history/ и не передаётся модели.
 Период берётся из manifest.json. Ноябрьская дата исходного запроса относится к первому выпуску.
 Агент выполняет смысловую работу в сессии. CLI готовит входы, проверяет переходы и формирует файл.
+
+Дополнительный поиск выполняется при проверке собранных материалов, до prepare-editorial.
+Найденные подходящие публикации проходят сохранение Article, архивирование и повторную QA.
+Редакционные анализ и отбор до десяти новостей, саммари, so what и финальная структура
+Mattermost используют закрытый корпус. При нехватке подтверждения редактор фиксирует
+пробел и возвращает его в QA исследования. После дополнения корпуса QA и подготовка
+редакционных входов повторяются. Изменение журналов поиска также отменяет прежний допуск.
 
 ```powershell
 $env:PYTHONPATH = Join-Path (Get-Location) 'src'
@@ -28,20 +35,19 @@ python -m dating_digest prepare-editorial --run-dir $run --verified-subset-reaso
 
 Режим использует eligible из research_review.json, сверяя текущий отпечаток корпуса,
 локальные ошибки, даты, полноту текстов и сохранённые наблюдения. Выпуск получает draft
-и оговорку об ограниченном покрытии. Вердикт исследования сохраняется.
+и оговорку об ограниченном покрытии. Вердикт исследования сохраняется. Blocking по eligible-статье запрещён. Замечание должно указывать articles/<id>.json (допустим #/field) или coverage/coverage.json. Нелокализованное blocking требует уточнения рецензентом.
 
-## Четыре шага
+## Три смысловых прохода
 
 | Шаг | Промпт | Результат | Проверка |
 |---|---|---|---|
 | 1. Анализ новостей | analyze-news.md | events/*.json, editorial/analysis.json | check-editorial --step analysis |
 | 2. Отбор приоритетных новостей | select-and-rank.md | ranking.json | check-editorial --step selection |
-| 3. Написание саммари | write-digest.md | editorial/summaries.json | check-editorial --step summaries |
-| 4. So what для Ловито | so-what.md | digest.json | check-editorial --step digest |
+| 3. Саммари и So what вместе | write-digest.md; so-what.md — критерии | editorial/summaries.json, digest.json | check-editorial --step digest |
 
 Каждый артефакт содержит run_id и input_sha256 из editorial/inputs.json.
 prepare-editorial сохраняет Article в editorial/news.json и снимки рабочих промптов
-в editorial/prompts/. Контекст Lovito берётся из context_bundle.json при отборе на шаге 2 и написании выводов на шаге 4. Редакционные правила фиксируются в editorial/policy.json.
+в editorial/prompts/. Контекст Lovito берётся из context_bundle.json при отборе на шаге 2 и написании выводов на шаге 3. Редакционные правила фиксируются в editorial/policy.json.
 
 Шаг 1 учитывает каждую статью ровно один раз в article_decisions с article_id, event_ids и reason.
 analysis.event_ids перечисляет карточки событий. Event дополняется primary_article_id, mechanism
@@ -56,7 +62,7 @@ decision принимает include или exclude. strategic_assessment рас�
 Шаг 3 сохраняет items выбранных событий в том же порядке с полями event_id, company,
 original_title, original_url, published_at и summary из 2–3 предложений.
 
-Шаг 4 копирует эти поля в digest.items и добавляет so_what.text из 1–2 предложений.
+Тот же проход копирует эти поля в digest.items и добавляет so_what.text из 1–2 предложений.
 Служебные поля so_what раскрывают бизнес-логику, сигнал рынка, связь с контекстом и ограничения. hypothesis_or_action допускает null. Смысловую глубину проверяет редактор по so-what-examples.md, CLI сверяет наличие обоснования и ссылки на контекст.
 context_refs сохраняет ID вопросов и утверждений bundle. Семь разделов остаются метаданными JSON.
 Пользовательский формат Mattermost задаёт единый порядок приоритета, rank и display_order совпадают.
@@ -65,7 +71,6 @@ context_refs сохраняет ID вопросов и утверждений bu
 # После записи результатов каждого шага агентом
 python -m dating_digest check-editorial --run-dir $run --step analysis
 python -m dating_digest check-editorial --run-dir $run --step selection
-python -m dating_digest check-editorial --run-dir $run --step summaries
 python -m dating_digest check-editorial --run-dir $run --step digest
 ```
 
@@ -76,7 +81,7 @@ python -m dating_digest check-editorial --run-dir $run --step digest
 
 ## Редакционная проверка и рендеринг
 
-После шага 4 агент проверяет факты, стадии, отбор и выводы по review-digest.md.
+После шага 3 агент проверяет факты, стадии, отбор и выводы по review-digest.md.
 Он записывает review.json по схеме Review с digest_sha256 и editorial_sha256 из check-editorial.
 В reviewer указывается фактический способ смысловой проверки. passed относится к точной ревизии
 после устранения blocking. Ограниченное покрытие сохраняется как warning и оговорка в посте.
@@ -89,7 +94,7 @@ python -m dating_digest render-digest --run-dir $run
 редакционные входы и Review через SHA-256. Повторный рендер атомарно обновляет локальный файл.
 Исправленный выпуск требует повторной проверки точной ревизии.
 
-Подготовленный выпуск находится в `data/runs/20261116T000000+0300_9d3cbbc0/rendered/mattermost.md`.
+Путь результата указан в editorial/render.json. Старый Markdown не подтверждает текущий допуск; после изменений проверки повторяются.
 Корпус и результаты запуска сохраняются локально в исключённой из Git папке data/.
 
 ## Изменение редакционных правил

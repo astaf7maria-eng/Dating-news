@@ -9,7 +9,8 @@ import unittest
 from unittest.mock import patch
 
 import test_research_qa
-from dating_digest.domain.context import build_context_bundle
+from dating_digest.domain.context import build_context_bundle, json_sha256
+from dating_digest.discovery.plan import build_plan
 from dating_digest import editorial
 from dating_digest.editorial import check_editorial, digest_title, prepare_editorial, publication_timestamp, render_digest
 from dating_digest.io import read_json, write_json
@@ -28,6 +29,10 @@ class EditorialTests(unittest.TestCase):
         manifest = read_json(self.run / 'manifest.json')
         manifest['business_context'] = dict(sha256=bundle['context_sha256'], version=bundle['context_version'])
         write_json(self.run / 'manifest.json', manifest, replace=True)
+        configs = {name: read_json(self.run / 'config_snapshot' / f'{name}.json')
+                   for name in ('companies', 'sources', 'queries')}
+        write_json(self.run / 'search_plan.json', build_plan(configs['companies'], configs['sources'],
+                   configs['queries'], manifest, bundle), replace=True)
         self.fixture.review()
 
     def prepare(self, *, subset=False):
@@ -252,3 +257,29 @@ class EditorialTests(unittest.TestCase):
                                     cwd=self.project, capture_output=True, encoding='utf-8')
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertEqual(json.loads(result.stdout)['run_id'], self.inputs['run_id'])
+
+    def test_rehashed_news_cannot_replace_qa_approved_article(self):
+        self.artifacts()
+        path = self.run / 'editorial/news.json'
+        news = read_json(path)
+        news['articles'][0]['text'] += ' Unsupported new fact.'
+        write_json(path, news, replace=True)
+        self.inputs['news_sha256'] = editorial._hash(path)
+        del self.inputs['input_sha256']
+        self.inputs['input_sha256'] = json_sha256(self.inputs)
+        write_json(self.run / 'editorial/inputs.json', self.inputs, replace=True)
+        for name in ('editorial/analysis.json', 'events/feature.json'):
+            artifact = read_json(self.run / name)
+            artifact['input_sha256'] = self.inputs['input_sha256']
+            write_json(self.run / name, artifact, replace=True)
+        with self.assertRaisesRegex(ValueError, 'QA-approved Articles'):
+            check_editorial(self.run, 'analysis', self.project)
+
+    def test_new_search_observation_requires_research_qa_before_rendering(self):
+        self.artifacts()
+        self.approve()
+        (self.run / 'raw/qa_search_log.jsonl').write_text(
+            json.dumps(dict(query='A new research query', status='completed', results=[])) + '\n',
+            encoding='utf-8')
+        with self.assertRaisesRegex(ValueError, 'stale|inputs changed'):
+            render_digest(self.run, self.project)

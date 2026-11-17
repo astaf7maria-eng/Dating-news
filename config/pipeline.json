@@ -1,5 +1,5 @@
 {
-  "version": "0.6",
+  "version": "0.7",
   "timezone": "Europe/Moscow",
   "storage": {
     "article_archive_dir": "article"
@@ -10,7 +10,11 @@
     "suggested_days": 7,
     "suggested_end": "as_of",
     "first_step": "confirm_period_before_collection",
-    "last_week_flow": ["propose_exact_range", "ask_yes_no", "if_no_request_custom_dates"],
+    "last_week_flow": [
+      "propose_exact_range",
+      "ask_yes_no",
+      "if_no_request_custom_dates"
+    ],
     "allow_custom_duration": true,
     "date_input_end": "inclusive",
     "explicit_user_dates_count_as_selection": true,
@@ -26,21 +30,15 @@
     "mode": "dry_run",
     "require_passed_review": true
   },
-  "retrieval": {
-    "search_provider": null,
-    "overlap_days": 3,
-    "max_attempts": 3,
-    "request_timeout_seconds": 30
-  },
   "ranking": {
     "status": "provisional_until_editorial_calibration",
     "scale": "0_to_5",
     "weights": {
       "business_relevance": 0.35,
-      "information_novelty": 0.20,
-      "actionability": 0.20,
+      "information_novelty": 0.2,
+      "actionability": 0.2,
       "evidence_quality": 0.15,
-      "market_impact": 0.10
+      "market_impact": 0.1
     },
     "minimum_score": null,
     "regional_quotas": null

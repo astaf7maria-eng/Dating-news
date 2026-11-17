@@ -5,7 +5,7 @@
 
 Работай после prepare-editorial, используя editorial/inputs.json, editorial/news.json,
 снимок common.md, editorial/policy.json и config_snapshot/sources.json.
-Период бери из inputs.json. Ноябрьский период исходного dating-market-digest.md относится к первому выпуску.
+Период бери только из inputs.json текущего запуска.
 Режим verified_subset формирует черновик по eligible с сохранённой оговоркой о покрытии.
 
 Прочитай все статьи news.json целиком. Для каждой выдели компанию или автора внешнего предупреждения,

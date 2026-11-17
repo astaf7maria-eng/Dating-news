@@ -67,6 +67,19 @@ class ArchiveTests(unittest.TestCase):
         self.assertEqual(path.read_bytes(), before)
         self.assertEqual(len(self.files()), 1)
 
+    def test_invalid_legacy_collection_date_does_not_reuse_matching_signature(self):
+        saved = self.archive.save(article())
+        path = self.archive.root / saved['archive_path']
+        legacy = json.loads(path.read_text(encoding='utf-8'))
+        del legacy['collected_at']
+        path.write_text(json.dumps(legacy, ensure_ascii=False), encoding='utf-8')
+        original = path.read_bytes()
+        corrected = self.archive.save(article())
+        self.assertEqual(corrected['action'], 'new_version')
+        self.assertNotEqual(corrected['archive_path'], saved['archive_path'])
+        self.assertEqual(path.read_bytes(), original)
+        self.assertEqual(self.archive.save(article())['archive_path'], corrected['archive_path'])
+
     def test_url_alias_and_tracking_do_not_create_another_article(self):
         self.archive.save(article())
         a = article(article_id="changed-id", url="https://EXAMPLE.com/news/1?utm_source=mail#top",
@@ -131,6 +144,46 @@ class ArchiveTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.archive.save(article(text_sha256="0" * 64))
         self.assertFalse(self.archive.root.exists())
+
+    def test_invalid_schema_is_rejected_before_creating_archive(self):
+        for changes in ({'company_ids': 'not-an-array'}, {'tags': ['unsupported']},
+                        {'language': None}, {'collected_at': 'not-a-timestamp'}):
+            with self.subTest(changes=changes):
+                with self.assertRaisesRegex(ValueError, 'Article'):
+                    self.archive.save(article(**changes))
+                self.assertFalse(self.archive.root.exists())
+
+    def test_metadata_corrections_append_versions_and_keep_original_bytes(self):
+        first = self.archive.save(article())
+        path = self.archive.root / first['archive_path']
+        before = path.read_bytes()
+        for changes in ({'company_ids': ['company']}, {'tags': ['features']}, {'language': 'en'},
+                        {'extraction_diagnostics': {'quality_issues': ['truncated']}}, {'source_id': 'corrected'}):
+            with self.subTest(changes=changes):
+                updated = article(**changes)
+                result = self.archive.save(updated)
+                self.assertEqual(result['action'], 'new_version')
+                self.assertEqual(self.archive.save(updated)['archive_path'], result['archive_path'])
+                self.assertEqual(path.read_bytes(), before)
+
+    def test_existing_valid_body_is_reused_with_legacy_index_signature(self):
+        first = self.archive.save(article())
+        with closing(sqlite3.connect(self.archive.root / '.archive.sqlite3')) as db, db:
+            db.execute("UPDATE records SET signature=?", ('legacy-signature',))
+            db.execute("DELETE FROM observations")
+        self.assertEqual(self.archive.save(article())['archive_path'], first['archive_path'])
+        self.assertEqual(len(self.files()), 1)
+
+    def test_entire_run_is_schema_checked_before_first_archive_write(self):
+        run = self.root / 'run'
+        (run / 'articles').mkdir(parents=True)
+        (run / 'manifest.json').write_text(json.dumps({'run_id': 'invalid-batch'}), encoding='utf-8')
+        for name, value in (('a', article()), ('b', article(article_id='second', tags=['invalid']))):
+            (run / 'articles' / f'{name}.json').write_text(json.dumps(value), encoding='utf-8')
+        with self.assertRaisesRegex(ValueError, 'Article second'):
+            archive_run(run, self.archive.root)
+        self.assertFalse(self.archive.root.exists())
+        self.assertFalse((run / 'article_archive.json').exists())
 
     def test_concurrent_saves_publish_only_one_json(self):
         with ThreadPoolExecutor(max_workers=5) as pool:

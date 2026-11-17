@@ -82,7 +82,7 @@ class FastSearchTests(unittest.TestCase):
         for language in ('ru', 'en', 'zh', 'ja'):
             self.assertEqual({task['direction_id'] for task in first
                               if task['language'] == language and task['lane'] == 'discovery'}, directions)
-        media_indexes = [item for item in plan['source_indexes'] if item['search_priority'] == 3]
+        media_indexes = [item for item in plan['source_indexes'] if item['search_priority'] in {0, 3}]
         self.assertEqual([sid for item in media_indexes for sid in item['source_ids']], s['source_policy']['key_media_ids'])
         self.assertTrue(all(set(item['direction_ids']) == directions for item in media_indexes))
         for sid in s['source_policy']['key_media_ids']:
@@ -102,7 +102,7 @@ class FastSearchTests(unittest.TestCase):
         no_discovery = build_plan(c, s, q, manifest)
         self.assertFalse(any(task['lane'] in {'discovery', 'external_discovery'} for task in no_discovery['queries']))
         self.assertEqual(len(media_indexes), len([item for item in no_discovery['source_indexes']
-                                                 if item['search_priority'] == 3]))
+                                                 if item['search_priority'] in {0, 3}]))
 
     def test_filter_excludes_service_guides_but_never_accepts_news_from_title(self):
         root = Path(__file__).resolve().parents[1]

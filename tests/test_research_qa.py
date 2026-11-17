@@ -46,7 +46,12 @@ class ResearchQATests(unittest.TestCase):
         raw = self.run / "raw"
         raw.mkdir()
         self.observation = dict(source_url=self.article["url"], checked_at="2026-11-16T12:00:00+03:00",
-                                status="checked", evidence="日本語の原文と制限。")
+                                article_id="one", status="checked", evidence="日本語の原文と制限。")
+        plan = read_json(self.run / "search_plan.json")
+        # Explicit synthetic observations; real targets require source-based decisions.
+        self.observation["targets"] = [f"company:{r['company_id']}:{lang}" for r in plan['coverage'] for lang in r['languages']]
+        self.observation["targets"] += [f"source:{sid}:{direction}" for r in plan['source_indexes']
+                                        for sid in r['source_ids'] for direction in r['direction_ids']]
         (raw / "source_reviews.jsonl").write_text(json.dumps(self.observation, ensure_ascii=False) + "\n", encoding="utf-8")
         (raw / "event_candidates.jsonl").write_text("", encoding="utf-8")
         self.ref = "raw/source_reviews.jsonl:1"
@@ -246,6 +251,68 @@ class ResearchQATests(unittest.TestCase):
                                 cwd=ROOT, capture_output=True, text=True, encoding="utf-8")
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(json.loads(result.stdout)["verdict"], "passed")
+
+    def test_subset_allows_coverage_and_excluded_article_blockers_but_not_eligible_or_unscoped(self):
+        review = self.review()
+        review['verdict'] = 'needs_revision'
+        review['findings'] = [dict(severity='blocking', path='coverage', issue='Incomplete', fix='Finish research')]
+        self.write_review(review)
+        self.assertEqual(check_research_qa(self.run, ROOT, verified_subset=True)['eligible_article_paths'], ['articles/one.json'])
+        review['findings'].append(dict(severity='blocking', path='articles/one.json#/facts', issue='Contradiction', fix='Verify'))
+        self.write_review(review)
+        with self.assertRaisesRegex(ValueError, 'blocking finding'):
+            check_research_qa(self.run, ROOT, verified_subset=True)
+        review['articles'][0]['disposition'] = 'needs_review'
+        self.write_review(review)
+        self.assertEqual(check_research_qa(self.run, ROOT, verified_subset=True)['eligible_article_paths'], [])
+        review['findings'][1]['path'] = 'articles'
+        self.write_review(review)
+        with self.assertRaisesRegex(ValueError, 'Unscoped blocking'):
+            check_research_qa(self.run, ROOT, verified_subset=True)
+
+    def test_evidence_requires_terminal_status_and_explicit_article_and_target(self):
+        for changes, message in (({'status': 'needs_review'}, 'completed source'),
+                                 ({'status': None}, 'completed source'),
+                                 ({'status': 'retrieved'}, 'completed source'),
+                                 ({'article_id': 'another'}, 'assessed Article'),
+                                 ({'targets': []}, 'coverage target'),
+                                 ({'result': 'unverified'}, 'contradictory evidence'),
+                                 ({'result_assignment': 'batch_union_not_per_query'}, 'completed source')):
+            with self.subTest(changes=changes):
+                (self.run / 'raw/source_reviews.jsonl').write_text(
+                    json.dumps(self.observation | changes, ensure_ascii=False) + '\n', encoding='utf-8')
+                self.review()
+                with self.assertRaisesRegex(ValueError, message):
+                    self.check()
+
+    def test_plan_queries_tasks_policy_and_embedded_snapshots_are_verified(self):
+        original = read_json(self.run / 'search_plan.json')
+        for mutate in (lambda p: p['queries'].clear(), lambda p: p['search_tasks'].clear(),
+                       lambda p: p['execution_policy'].update(budget={}),
+                       lambda p: p['config_snapshot']['queries']['search_intents']['product_change']['terms'].update(en=['unrelated'])):
+            plan = copy.deepcopy(original)
+            mutate(plan)
+            write_json(self.run / 'search_plan.json', plan, replace=True)
+            self.assertIn('plan_content_mismatch', {f['code'] for f in self.audit()['findings']})
+
+    def test_corrected_legacy_metadata_can_reach_qa_without_rewriting_archive(self):
+        receipt = read_json(self.run / 'article_archive.json')
+        path = self.root / 'archive' / receipt['items'][0]['archive_path']
+        legacy = read_json(path)
+        legacy['company_ids'] = 'invalid legacy data'
+        write_json(path, legacy, replace=True)  # Simulate an archive created by the former permissive writer.
+        before = path.read_bytes()
+        result = archive_run(self.run)
+        self.assertEqual(result['actions'], {'new_version': 1})
+        self.assertEqual(path.read_bytes(), before)
+        self.assertEqual(self.audit()['automatic_status'], 'checks_passed')
+
+    def test_tag_correction_requires_a_matching_archived_version(self):
+        self.article['tags'] = ['ai']
+        self.save_article()
+        self.assertIn('stale_archive_receipt', {f['code'] for f in self.audit()['findings']})
+        self.assertEqual(archive_run(self.run)['actions'], {'new_version': 1})
+        self.assertEqual(self.audit()['automatic_status'], 'checks_passed')
 
 
 if __name__ == "__main__":

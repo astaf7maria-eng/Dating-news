@@ -1,19 +1,13 @@
-﻿# Шаг 3. Написание саммари
+# Написание саммари и So what одним проходом
 
-Вход — проверенные шаги 1–2, исходные Article и выбранные события в порядке ranking.json.
-Прочитай исходный пользовательский промпт dating-market-digest.md из редакционного снимка.
+Вход — проверенные analysis/ranking, выбранные Event и их strategic_assessment, editorial/inputs.json, editorial/policy.json и context_bundle.json. Используй требования dating-market-digest.md и критерии so-what.md/so-what-examples.md из редакционного снимка.
 
-Для каждого выбранного события напиши 2–3 предложения на русском. Передай произошедшее изменение,
-механику и его значение, сохраняя подтверждённые числа, условия, аудиторию, рынки и стадию.
-Заявления компаний атрибутируй. Результаты исторических тестов обозначай как раскрытые результаты.
-Прогнозы, будущие запуски и сделки сохраняют свои стадии. Различай annualized run rate и выручку периода.
+Для каждого выбранного события сразу напиши саммари и So what. Факты бери из Event и связанных Article; исходник открывай для нужного подтверждения и метаданных, весь news.json повторно не загружай. Заявления атрибутируй, сохрани даты реализации и раскрытия, рынки, условия и стадии. Различай annualized run rate и выручку периода.
 
-Сохрани editorial/summaries.json с run_id, input_sha256 и items выбранных событий.
-Каждая запись содержит event_id, company, original_title, original_url, published_at, summary.
-Заголовок и URL копируй точно из primary Article, название компании или органа пиши читаемо.
-published_at получи через dating_digest.editorial.publication_timestamp(article). Известная дата
-без времени нормализуется для JSON в начало дня по Москве с сохранением точности исходного Article.
-Сохраняй исходные title/text Article и цитаты Event.
+В editorial/summaries.json сохрани run_id, input_sha256 и items в порядке выбранных ranking.items: event_id, company, original_title, original_url, published_at, summary. Саммари — 2–3 предложения. Title/URL копируй из primary Article; published_at получи через dating_digest.editorial.publication_timestamp(article).
 
-Выполни `python -m dating_digest check-editorial --run-dir <run_dir> --step summaries`.
-Исправь ошибки перед переходом к шагу 4.
+В digest.json по digest.schema.json скопируй поля саммари без изменений и добавь So what. Переиспользуй reasoning из ranking.strategic_assessment: competitor_logic → competitor_logic, strategic_signal → market_signal, lovito_implication → context_link, evidence_limits → существенные limitations; context_refs/related_event_ids сохраняют ссылки. Новые выводы должны следовать тем же доказательствам. so_what.text — видимые 1–2 предложения; hypothesis_or_action необязателен.
+
+Период, версии, mode и input_sha256 — из inputs; title получи через dating_digest.editorial.digest_title(inputs). Сохрани семь внутренних sections, непрерывные rank/display_order, sources из связанных Article. В verified_subset статус draft и обязательная оговорка покрытия. При недоборе shortfall_reason объясняет причину внутри JSON.
+
+После сохранения обоих файлов выполни check-editorial --step digest: команда проверяет также summaries и предыдущие результаты. Затем отдельная проверка по review-digest.md и render-digest. Команда --step summaries остаётся доступной для адресного исправления саммари.

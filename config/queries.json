@@ -1,5 +1,5 @@
 {
-  "version": "0.7",
+  "version": "0.8",
   "status": "event_focused_catalog_v2",
   "languages": [
     "ru",
@@ -145,84 +145,12 @@
       ]
     }
   },
-  "company_profiles": {
-    "always": {
-      "thematic_sections": [
-        "features",
-        "monetization",
-        "trust_safety",
-        "ai",
-        "new_models",
-        "business",
-        "marketing"
-      ]
-    },
-    "golden_set": {
-      "thematic_sections": [
-        "features",
-        "monetization",
-        "trust_safety",
-        "ai",
-        "new_models",
-        "business",
-        "marketing"
-      ]
-    },
-    "golden_adjacent": {
-      "thematic_sections": []
-    },
-    "russia": {
-      "thematic_sections": [
-        "features",
-        "monetization",
-        "trust_safety",
-        "ai",
-        "new_models",
-        "business",
-        "marketing"
-      ]
-    },
-    "international": {
-      "thematic_sections": []
-    },
-    "mechanism_watch": {
-      "thematic_sections": [
-        "new_models",
-        "monetization",
-        "ai"
-      ]
-    }
-  },
   "company_query_policy": {
     "baseline": "В fast-режиме источники проверяются раньше брендовых запросов. Уточнение: имя + dating-квалификатор при неоднозначности + одно действие/механика.",
     "themes": "На компанию/язык — одно условное уточнение изменений продукта. Для всех компаний предусмотрено уточнение внешних интервью/результатов на основном языке. Intent и синоним выбираются по наблюдаемому сигналу; все сочетания не разворачиваются.",
     "disambiguation": "Для PURE, World, Pairs, Boo и других неоднозначных названий добавлять dating-контекст; не искать World без World ID/квалификаторов",
     "all_aliases_in_baseline": false,
-    "alias_policy": "Начинать с основного/локального имени, следующий алиас или синоним брать при пробеле; RU/EN и локальный язык не считать проверенными по одной метке.",
-    "event_terms": {
-      "ru": [
-        "изменения продукта",
-        "обновление",
-        "новая функция",
-        "тестирует"
-      ],
-      "en": [
-        "product changes",
-        "product update",
-        "new feature",
-        "tests"
-      ],
-      "zh": [
-        "产品更新",
-        "功能调整",
-        "测试"
-      ],
-      "ja": [
-        "機能変更",
-        "アップデート",
-        "テスト"
-      ]
-    }
+    "alias_policy": "Начинать с основного/локального имени, следующий алиас или синоним брать при пробеле; RU/EN и локальный язык не считать проверенными по одной метке."
   },
   "discovery": {
     "enabled": true,
@@ -501,12 +429,6 @@
           "marketing": "マッチングアプリ キャンペーン"
         }
       }
-    ],
-    "source_seed_ids": [
-      "gdi",
-      "dating_industry_insights",
-      "techcrunch",
-      "36kr"
     ],
     "candidate_promotion": "Сохранить новый бренд и доказательства механики в discovery_candidates; не добавлять в обязательный список молча",
     "candidate_fields": [

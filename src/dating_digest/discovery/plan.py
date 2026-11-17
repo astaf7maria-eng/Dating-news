@@ -129,6 +129,8 @@ def build_plan(catalog: dict, sources: dict, rules: dict, manifest: dict,
 
     policy = sources.get("source_policy", {})
     media_ids = policy.get("key_media_ids", [])
+    first_sources = policy.get("collection_first_source_ids", [])
+    media_order = first_sources + [sid for sid in media_ids if sid not in first_sources]
     indexes = {}
     for source in sources["sources"]:
         if not source["enabled"]:
@@ -139,6 +141,8 @@ def build_plan(catalog: dict, sources: dict, rules: dict, manifest: dict,
         media = source["id"] in media_ids
         if official or media:
             priority = (1 if source["kind"] in {"official_newsroom", "investor_relations"} else 2) if official else 3
+            if source["id"] in first_sources:
+                priority = 0
             # Some catalog URLs are known articles. They are reference seeds,
             # never discoveries. Navigate from a neutral section instead.
             path = parts.path
@@ -171,7 +175,7 @@ def build_plan(catalog: dict, sources: dict, rules: dict, manifest: dict,
             for direction in directions:
                 add("media_review", lang, "event_lookup",
                     f'site:{parts.hostname} {rules["discovery"]["context"][lang][0]} {vocabulary[direction]["terms"][lang][0]}',
-                    source_id=source["id"], direction_id=direction, priority=3,
+                    source_id=source["id"], direction_id=direction, priority=priority,
                     trigger="source_direction_or_window_not_checked")
 
     discovery = rules["discovery"]
@@ -204,7 +208,7 @@ def build_plan(catalog: dict, sources: dict, rules: dict, manifest: dict,
             add("secondary_review", lang, section,
                 f'{discovery["context"][lang][0]} {signals[lang][0]}', trigger="secondary_after_primary")
 
-    queries.sort(key=lambda q: (q["search_priority"], media_ids.index(q["source_id"]) if q["source_id"] in media_ids else 0))
+    queries.sort(key=lambda q: (q["search_priority"], media_order.index(q["source_id"]) if q["source_id"] in media_order else 0))
     tasks = {}
     for q in queries:
         key = (q["query"], q["phase"])
@@ -218,8 +222,8 @@ def build_plan(catalog: dict, sources: dict, rules: dict, manifest: dict,
                   language_request_count=sum(len(t["language_variants"]) for t in tasks.values()),
                   initial_query_count=sum(q["phase"] == "first_pass" for q in queries),
                   source_indexes=sorted(indexes.values(), key=lambda x: (
-                      x["search_priority"], min((media_ids.index(sid) for sid in x["source_ids"]
-                                                 if sid in media_ids), default=-1))))
+                      x["search_priority"], min((media_order.index(sid) for sid in x["source_ids"]
+                                                 if sid in media_order), default=-1))))
     for c in result["coverage"]:
         company = by_id[c["company_id"]]
         c.update(query_ids=[q["query_id"] for q in queries if c["company_id"] in q["company_ids"]],
@@ -256,6 +260,5 @@ def build_plan(catalog: dict, sources: dict, rules: dict, manifest: dict,
         source_review_log="raw/source_reviews.jsonl",
         new_companies="Keep newly found names, mechanics and sources in discovery_candidates using the snapshot candidate_fields; company_name follow-ups work before catalog promotion.",
     )
-    if rules["retrieval_policy"].get("excluded_domains"):
-        result["execution_policy"]["source_order"] = policy["media_search"]
+    result["execution_policy"]["source_order"] = policy["media_search"]
     return result

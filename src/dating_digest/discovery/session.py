@@ -48,7 +48,12 @@ class Budget:
 
 
 class WorkLedger:
-    """Reserve before submitting work, including queued and in-flight URLs."""
+    """Reserve one job, including its bounded transient retry, before submission.
+
+    Keep the reservation in-flight while retrying; finish_* records the final
+    outcome. Terminal errors are not reopened by reserve/enqueue. The caller
+    owns retry limits and persistence; the ledger never starts network work.
+    """
     def __init__(self):
         self.lock = Lock()
         self.requests, self.urls, self.analysis = {}, {}, {}

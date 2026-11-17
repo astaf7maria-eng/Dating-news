@@ -19,10 +19,11 @@ from .domain.context import json_sha256
 from .domain.window import MOSCOW, validate_window
 from .discovery.plan import build_plan
 from .io import read_json, write_json
-from .storage.archive import normalize_url, publication_day
+from .storage.archive import normalize_url, publication_day, version_metadata
 
 CHECKS = ("coverage", "dates", "sources", "filters", "extraction", "event_facts", "missed_news")
 INELIGIBLE = {"unknown_date", "outside_window", "ambiguous_day", "incomplete_text", "encoding_damage", "extraction_diagnostics"}
+COMPLETED_OBSERVATIONS = {"checked", "completed", "assessed", "no_results", "empty"}
 
 
 def _validator(path: Path) -> Draft202012Validator:
@@ -75,9 +76,10 @@ def audit_research(run_dir: Path, project_dir: Path = Path(".")) -> dict:
     bundle_path = run_dir / "context_bundle.json"
     expected = build_plan(snapshots["companies"], snapshots["sources"], snapshots["queries"], manifest,
                           read_json(bundle_path) if bundle_path.exists() else None)
-    for key in ("coverage", "source_indexes"):
-        if plan[key] != expected[key]:
-            finding("coverage_plan_mismatch", "search_plan.json", "Coverage differs from frozen catalog plan: " + key)
+    for key, value in expected.items():
+        if plan.get(key) != value:
+            code = "coverage_plan_mismatch" if key in {"coverage", "source_indexes"} else "plan_content_mismatch"
+            finding(code, "search_plan.json", "Plan differs from frozen catalog plan: " + key)
 
     targets = sorted({f"company:{row['company_id']}:{lang}" for row in plan["coverage"] for lang in row["languages"]}
                      | {f"source:{sid}:{direction}" for row in plan["source_indexes"]
@@ -206,10 +208,7 @@ def audit_research(run_dir: Path, project_dir: Path = Path(".")) -> dict:
                 if normalize(staged["text"]) != normalize(body["text"]):
                     finding("stale_archive_receipt", "article_archive.json", "Staged text differs from archived body; rerun archive-articles")
                 if body.get("article_id") == staged["article_id"] and staged["text"].strip():
-                    keys = ("published_at", "date_precision", "extraction_status")
-                    if (" ".join(str(body.get("title", "")).split()) != " ".join(str(staged.get("title", "")).split())
-                            or any(body.get(key) != staged.get(key) for key in keys)
-                            or publication_day(body) != publication_day(staged)):
+                    if version_metadata(body) != version_metadata(staged):
                         finding("stale_archive_receipt", "article_archive.json", "Staged metadata differs from archived version; rerun archive-articles")
 
     return dict(schema_version="0.1", run_id=manifest["run_id"],
@@ -248,6 +247,17 @@ def check_research_qa(run_dir: Path, project_dir: Path = Path("."), *, verified_
     by_path = {row["path"]: row for row in rows}
     if len(rows) != len(by_path) or set(by_path) != {a["path"] for a in current["articles"]}:
         raise ValueError("Assessment must cover every staged Article exactly once")
+    if verified_subset:
+        for issue in review["findings"]:
+            if issue["severity"] != "blocking":
+                continue
+            path = issue["path"].replace("\\", "/").split("#", 1)[0]
+            if path in {"coverage", "coverage.json"} or path.startswith("coverage/"):
+                continue
+            if path not in by_path:
+                raise ValueError("Unscoped blocking finding; identify affected Articles or coverage: " + path)
+            if by_path[path]["disposition"] == "eligible":
+                raise ValueError("Eligible Article has a blocking finding: " + path)
     for article in current["articles"]:
         row = by_path[article["path"]]
         if row["article_id"] != article["article_id"] or (not verified_subset and row["disposition"] == "needs_review"):
@@ -275,14 +285,34 @@ def check_research_qa(run_dir: Path, project_dir: Path = Path("."), *, verified_
             raise ValueError("Missing observation: " + ref)
         row = json.loads(lines[index])
         if (not isinstance(row, dict) or not any(row.get(key) for key in ("source_url", "url", "query", "evidence_urls", "results"))
-                or row.get("status") in {"planned", "error", "failed", "not_checked", "inflight", "budget_not_started"}):
+                or row.get("status") not in COMPLETED_OBSERVATIONS
+                or row.get("result_assignment") == "batch_union_not_per_query"):
             raise ValueError("Evidence is not a completed source/search observation: " + ref)
+        return row
 
     evidence_rows = ([row for row in rows if row["disposition"] == "eligible"] if verified_subset
                      else [*rows, *coverage, *review["checks"].values()])
     references = {ref for row in evidence_rows for ref in row["evidence_refs"]}
-    for ref in sorted(references):
-        observation(ref)
+    observations = {ref: observation(ref) for ref in sorted(references)}
+    for row in rows:
+        if verified_subset and row["disposition"] != "eligible":
+            continue
+        linked = [observations[ref] for ref in row["evidence_refs"]
+                  if observations[ref].get("article_id") == row["article_id"]]
+        if not linked:
+            raise ValueError("Evidence must identify the assessed Article: " + row["path"])
+        if row["disposition"] == "eligible" and any(
+            item.get(key) in {"needs_review", "unverified", "excluded", "failed", "unknown"}
+            for item in linked for key in ("disposition", "result") if isinstance(item.get(key), str)
+        ):
+            raise ValueError("Eligible Article has unresolved or contradictory evidence: " + row["path"])
+    if not verified_subset:
+        for row in coverage:
+            if not any(observations[ref].get("target") == row["target"] or (
+                isinstance(observations[ref].get("targets"), list)
+                and row["target"] in observations[ref]["targets"]
+            ) for ref in row["evidence_refs"]):
+                raise ValueError("Evidence must identify the coverage target: " + row["target"])
     return dict(run_id=current["run_id"], input_sha256=current["input_sha256"],
                 verdict="verified_subset" if verified_subset else "passed",
                 eligible_article_paths=[row["path"] for row in rows if row["disposition"] == "eligible"])

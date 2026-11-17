@@ -91,7 +91,8 @@ class DiscoveryTests(unittest.TestCase):
         for entries in (plan["source_indexes"], plan["queries"], plan["search_tasks"]):
             priorities = [entry["search_priority"] for entry in entries]
             self.assertEqual(priorities, sorted(priorities))
-        self.assertEqual({q["search_priority"] for q in plan["queries"]}, {1, 2, 3, 4})
+        self.assertEqual({q["search_priority"] for q in plan["queries"]}, {0, 1, 2, 3, 4})
+        self.assertIn('gdi', plan['source_indexes'][0]['source_ids'])
         for query in plan["queries"]:
             if query["search_priority"] == 1:
                 self.assertEqual(query["lane"], "official_source")
@@ -106,7 +107,7 @@ class DiscoveryTests(unittest.TestCase):
     def test_invalid_key_media_policy_is_rejected_before_run(self):
         root = Path(__file__).resolve().parents[1]
         configs = {name: read_json(root / "config" / f"{name}.json") for name in CONFIG_NAMES}
-        for change in ("unknown", "disabled", "not_media", "no_keywords"):
+        for change in ("unknown", "disabled", "not_media", "no_context", "unknown_initial_source"):
             with self.subTest(change=change):
                 invalid = copy.deepcopy(configs)
                 policy = invalid["sources"]["source_policy"]
@@ -117,8 +118,10 @@ class DiscoveryTests(unittest.TestCase):
                     source["enabled"] = False
                 elif change == "not_media":
                     policy["key_media_ids"].append("tinder_newsroom")
+                elif change == 'no_context':
+                    del invalid['queries']['discovery']['context']['en']
                 else:
-                    policy["media_keywords"]["en"] = []
+                    policy['collection_first_source_ids'] = ['missing']
                 with self.assertRaises(ValueError):
                     validate_configs(invalid, root / "schemas")
 
@@ -133,7 +136,7 @@ class DiscoveryTests(unittest.TestCase):
                 if change == 'direction_terms':
                     del rules['research_policy']['directions']['marketing']['terms']['ja']
                 elif change == 'company_terms':
-                    del rules['company_query_policy']['event_terms']['ja']
+                    del rules['search_intents']['product_change']['terms']['ja']
                 elif change == 'native_query':
                     del rules['discovery']['native_language_queries'][0]['direction_queries']['marketing']
                 elif change == 'primary_language':
@@ -157,6 +160,20 @@ class DiscoveryTests(unittest.TestCase):
             validate_configs(configs, root / "schemas")
         with self.assertRaisesRegex(ValueError, "research_policy.*new run"):
             build_plan(configs["companies"], configs["sources"], configs["queries"], self.manifest)
+
+    def test_domain_exclusions_do_not_change_source_order(self):
+        baseline = self.plan()
+        rules = copy.deepcopy(self.rules)
+        rules['retrieval_policy']['excluded_domains'] = []
+        changed = build_plan(self.catalog, self.sources, rules, self.manifest)
+        self.assertEqual(baseline['source_indexes'], changed['source_indexes'])
+        self.assertEqual(baseline['execution_policy']['source_order'], changed['execution_policy']['source_order'])
+
+    def test_initial_source_order_is_explicit_and_configurable(self):
+        sources = copy.deepcopy(self.sources)
+        sources['source_policy']['collection_first_source_ids'] = ['techcrunch', 'gdi']
+        plan = build_plan(self.catalog, sources, self.rules, self.manifest)
+        self.assertEqual([s['source_ids'][0] for s in plan['source_indexes'][:2]], ['techcrunch', 'gdi'])
 
 
 if __name__ == "__main__":

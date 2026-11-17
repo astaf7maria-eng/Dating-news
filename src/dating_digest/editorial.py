@@ -96,6 +96,9 @@ def _instructions() -> str:
 Работай из корня проекта. `--run-dir` указывает папку этого запуска.
 Прочитай editorial/inputs.json и снимок editorial/prompts/dating-market-digest.md.
 Сохраняй input_sha256 из inputs.json в каждом артефакте шага.
+Редакционные шаги используют только сохранённый корпус. Новые факты или источники
+требуют возврата к QA исследования: сохранить Article и архив, повторить QA и prepare-editorial.
+Поиск и загрузку страниц выполняй на этапе исследования и его QA.
 
 1. Анализ. Используй editorial/news.json, editorial/prompts/common.md и analyze-news.md.
    Сохрани events/<event_id>.json и editorial/analysis.json, затем выполни check-editorial --step analysis.
@@ -103,15 +106,18 @@ def _instructions() -> str:
    config_snapshot/pipeline.json, sources.json и editorial/prompts/select-and-rank.md. Сохрани ranking.json
    с бизнес-логикой, стратегическим сигналом и последствиями для Lovito по каждому кандидату,
    затем выполни check-editorial --step selection.
-3. Саммари. Используй выбранные события и editorial/prompts/write-digest.md.
-   Сохрани editorial/summaries.json, затем выполни check-editorial --step summaries.
-4. So what. Используй context_bundle.json, editorial/prompts/so-what.md и so-what-examples.md.
-   Раскрой причины, рыночный сигнал и последствия для Lovito в 1–2 предложениях.
-   Сохрани digest.json, затем выполни check-editorial --step digest.
+3. Написание выпуска одним проходом. Используй выбранные события, их strategic_assessment,
+   context_bundle.json и editorial/prompts/write-digest.md; so-what.md и so-what-examples.md — критерии качества.
+   Напиши саммари и So what вместе, переиспользуя уже проверенное стратегическое обоснование.
+   Загружай только выбранные Article для нужных цитат и метаданных, весь корпус повторно не передавай.
+   Сохрани editorial/summaries.json и digest.json, затем выполни check-editorial --step digest:
+   эта команда также проверяет саммари и все предыдущие артефакты.
 
-После четырёх шагов выполни редакционную проверку по editorial/prompts/review-digest.md,
+После трёх проходов выполни отдельную редакционную проверку по editorial/prompts/review-digest.md,
 сохрани review.json для точных digest_sha256 и editorial_sha256 из результата проверки.
 Выполни render-digest. Готовый пост появится в rendered/mattermost.md.
+Если две попытки исправления одной ошибки не помогают, сохрани причину остановки;
+не повторяй весь корпус и поиск автоматически. Новый факт возвращается в research QA.
 Полные команды и контракты артефактов находятся в docs/editorial-workflow.md.
 """
 
@@ -130,6 +136,8 @@ def _load(run_dir: Path, project_dir: Path) -> tuple[dict, dict, dict, dict]:
     for name, fingerprint in inputs["prompt_hashes"].items():
         _require(_hash(run_dir / "editorial/prompts" / f"{name}.md") == fingerprint, "Editorial prompt snapshot changed")
     news = read_json(run_dir / "editorial/news.json")
+    _require(news["articles"] == [read_json(run_dir / path) for path in current["eligible_article_paths"]],
+             "Editorial corpus differs from QA-approved Articles; rerun prepare-editorial")
     articles = {a["article_id"]: a for a in news["articles"]}
     _require(len(articles) == len(news["articles"]) and news["run_id"] == inputs["run_id"], "Invalid editorial corpus")
     policy_path = run_dir / "config_snapshot/editorial_policy.json"

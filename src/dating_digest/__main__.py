@@ -31,8 +31,8 @@ def validate_configs(configs: dict, schema_dir: Path = Path("schemas")) -> None:
     require_fast_policy(rules)
     companies = index_by_id(catalog["companies"], "company")
     sources = index_by_id(configs["sources"]["sources"], "source")
-    if any(not isinstance(rules[key], dict) for key in ("company_profiles", "category_signals")):
-        raise ValueError("Query profiles and category signals must be objects")
+    if not isinstance(rules["category_signals"], dict):
+        raise ValueError("Category signals must be an object")
 
     def references(values, known, label):
         if (not isinstance(values, list) or any(not isinstance(value, str) for value in values)
@@ -45,8 +45,8 @@ def validate_configs(configs: dict, schema_dir: Path = Path("schemas")) -> None:
         raise ValueError("Required companies must exist and be enabled")
     for company in companies.values():
         references(company["source_ids"], sources, f"company {company['id']} source")
-        if company["tier"] not in rules["company_profiles"] or type(company["enabled"]) is not bool:
-            raise ValueError(f"Invalid company profile or enabled flag: {company['id']}")
+        if not isinstance(company["tier"], str) or not company["tier"].strip() or type(company["enabled"]) is not bool:
+            raise ValueError(f"Invalid company tier or enabled flag: {company['id']}")
         languages = company["search_languages"]
         if not isinstance(languages, list) or not languages or any(not isinstance(lang, str) for lang in languages):
             raise ValueError(f"Invalid search languages: {company['id']}")
@@ -58,12 +58,13 @@ def validate_configs(configs: dict, schema_dir: Path = Path("schemas")) -> None:
         references(source["company_ids"], companies, f"source {source['id']} company")
         if type(source["enabled"]) is not bool:
             raise ValueError(f"Invalid source enabled flag: {source['id']}")
-    for profile in rules["company_profiles"].values():
-        references(profile["thematic_sections"], rules["category_signals"], "query section")
-    references(rules["discovery"]["source_seed_ids"], sources, "discovery seed")
     source_policy = configs["sources"].get("source_policy", {})
     media_ids = source_policy.get("key_media_ids", [])
     references(media_ids, sources, "key media")
+    first_sources = source_policy.get("collection_first_source_ids", [])
+    references(first_sources, media_ids, "initial media source")
+    if len(first_sources) != len(set(first_sources)):
+        raise ValueError("Duplicate initial media sources")
     if len(media_ids) != len(set(media_ids)):
         raise ValueError("Duplicate key media references")
     for source_id in media_ids:
@@ -71,10 +72,8 @@ def validate_configs(configs: dict, schema_dir: Path = Path("schemas")) -> None:
         if not source["enabled"] or source["kind"] not in {"industry_media", "general_media"}:
             raise ValueError(f"Key media must be enabled media: {source_id}")
         language = source["language"]
-        keywords = source_policy.get("media_keywords", {}).get(language)
-        if (language not in rules["discovery"]["context"] or not isinstance(keywords, list)
-                or not keywords or any(not isinstance(word, str) or not word.strip() for word in keywords)):
-            raise ValueError(f"Missing key media keywords or dating context: {source_id}")
+        if language not in rules["discovery"]["context"]:
+            raise ValueError(f"Missing key media dating context: {source_id}")
     focus = rules["research_policy"]
     directions = focus.get("primary_directions", [])
     vocabulary = focus.get("directions", {})
@@ -84,11 +83,6 @@ def validate_configs(configs: dict, schema_dir: Path = Path("schemas")) -> None:
     references(focus.get("secondary_sections"), rules["category_signals"], "secondary section")
     languages = (set(rules["languages"]) | {lang for c in companies.values() for lang in c["search_languages"]}
                  | {sources[sid]["language"] for sid in media_ids})
-    for language in languages:
-        terms = rules["company_query_policy"].get("event_terms", {}).get(language)
-        if (not isinstance(terms, list) or not terms
-                or any(not isinstance(term, str) or not term.strip() for term in terms)):
-            raise ValueError(f"Missing company event terms: {language}")
     intents = rules["search_intents"]
     external = rules["external_search"]
     if not isinstance(intents, dict) or "product_change" not in intents or not isinstance(external, dict):
@@ -203,7 +197,7 @@ def main() -> None:
     ):
         qa = commands.add_parser(command, help=help_text)
         qa.add_argument("--run-dir", type=Path, required=True)
-    editorial = commands.add_parser("prepare-editorial", help="Prepare the four sequential session-authored editorial steps")
+    editorial = commands.add_parser("prepare-editorial", help="Prepare analysis, selection and combined digest writing")
     editorial.add_argument("--run-dir", type=Path, required=True)
     editorial.add_argument("--verified-subset-reason", help="Explicitly requested draft from eligible articles with limited coverage")
     editorial.add_argument("--editorial-policy", type=Path, help="Explicit editorial policy revision for this preparation; frozen research inputs are preserved")
@@ -254,11 +248,8 @@ def main() -> None:
 
     if args.command == "extract-page":
         try:
-            from .ingestion import extract_article
-            article = extract_article(args.html.read_text(encoding="utf-8-sig"),
-                                      read_json(args.metadata), tags=args.tags)
-            article["raw_path"] = str(args.html)
-            write_json(args.output, article)
+            from .ingestion import save_html_article
+            article = save_html_article(args.html, read_json(args.metadata), args.output, tags=args.tags)
         except (OSError, ValueError, KeyError, TypeError, ImportError) as exc:
             parser.error(str(exc))
         print(f"Saved Article: {args.output}; {article['extraction_status']}; "
@@ -318,13 +309,13 @@ def main() -> None:
             "timezone": "Europe/Moscow", "window_start": start.isoformat(), "window_end_exclusive": end.isoformat(),
             "window_days": (end - start).total_seconds() / 86400,
             "window_confirmation": {"status": "confirmed", "method": selection, "confirmed_at": now.isoformat()},
-            "status": "planned", "stages": {name: "planned" for name in ("discovery", "ingestion", "research_qa", "editorial", "review", "publishing")},
+            "initial_status": "planned",
             "publication_enabled": False,
             "article_storage": {"archive_dir": str(Path(snapshots["pipeline"].get("storage", {}).get("article_archive_dir", "article")).resolve()),
                                 "layout": "YYYY/MM/DD.MM.YY", "mode": "append_only_deduplicated"},
             "business_context": {"version": bundle["context_version"], "sha256": bundle["context_sha256"], "bundle": "context_bundle.json"},
             "config_sha256": {name: json_sha256(value) for name, value in snapshots.items()},
-            "note": "Scaffold only; no collection, ranking, review or delivery has run.",
+            "note": "Creation record only; current readiness is determined by research/editorial checks and revision-bound review/render receipts.",
         }
         run_dir.parent.mkdir(parents=True, exist_ok=True)
         with TemporaryDirectory(prefix=".init-", dir=run_dir.parent) as temporary:

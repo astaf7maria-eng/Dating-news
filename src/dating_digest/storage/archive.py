@@ -14,6 +14,8 @@ import sqlite3
 import unicodedata
 from urllib.parse import unquote_plus, urlsplit, urlunsplit
 
+from jsonschema import Draft202012Validator, FormatChecker
+
 from dating_digest.domain.window import MOSCOW
 from dating_digest.io import read_json as _read, write_json as _publish
 
@@ -68,6 +70,28 @@ def publication_day(article: dict) -> date | None:
     return None
 
 
+def version_metadata(article: dict) -> dict:
+    """Stable, schema-checked metadata whose correction needs a new version."""
+    day = publication_day(article)
+    return {
+        **{key: article.get(key) for key in (
+            "schema_version", "source_id", "language", "company_ids", "tags", "event_date",
+            "published_at", "date_precision", "extraction_status", "extraction_error",
+            "extraction_diagnostics",
+        )},
+        "title": " ".join(str(article.get("title", "")).split()),
+        "publication_day": day.isoformat() if day else None,
+    }
+
+
+def _validate_article(value: dict) -> None:
+    schema = _read(Path(__file__).resolve().parents[3] / "schemas/article.schema.json")
+    error = next(Draft202012Validator(schema, format_checker=FormatChecker()).iter_errors(value), None)
+    if error:
+        field = "/".join(map(str, error.absolute_path))
+        raise ValueError(f"Article {value.get('article_id', '?')}#/{field}: {error.message}")
+
+
 def _prepare(article: dict) -> tuple[dict, str | None, str, list[str], date | None]:
     value = dict(article)
     article_id = value.get("article_id")
@@ -87,12 +111,7 @@ def _prepare(article: dict) -> tuple[dict, str | None, str, list[str], date | No
     text_hash = _digest(normalized) if normalized else None
     day = publication_day(value)
     # Volatile collected_at, run-local paths and query IDs do not create versions.
-    signature = _digest(_json({
-        "title": " ".join(str(value.get("title", "")).split()),
-        "text_hash": text_hash, "publication_day": day.isoformat() if day else None,
-        "published_at": value.get("published_at"), "date_precision": value.get("date_precision"),
-        "extraction_status": value.get("extraction_status"),
-    }))
+    signature = _digest(_json({**version_metadata(value), "text_hash": text_hash}))
     return value, text_hash, signature, urls, day
 
 
@@ -136,6 +155,7 @@ class ArticleArchive:
 
     def save(self, article: dict, *, run_id: str = "manual", source_path: str | None = None) -> dict:
         value, text_hash, signature, urls, day = _prepare(article)
+        _validate_article(value)
         with self._connect() as db:
             # Recover immutable JSONs if the catalog was lost or first creation
             # was interrupted. Normal saves use indexed lookups, not a tree scan.
@@ -155,14 +175,27 @@ class ArticleArchive:
                     matched_by.add(kind)
             row = None
             for candidate in matches.values():
-                observed = candidate["signature"] == signature or db.execute(
+                # Read existing bodies with today's signature without rewriting
+                # historical JSONs or requiring an index migration.
+                body = _read(self.root / candidate["path"])
+                try:
+                    _validate_article(body)
+                except ValueError:
+                    continue  # A corrected Article must not reuse an invalid legacy body.
+                observed = _prepare(body)[2] == signature or (body["article_id"] != value["article_id"] and db.execute(
                     "SELECT 1 FROM observations WHERE record_id=? AND signature=? LIMIT 1", (candidate["id"], signature)
-                ).fetchone()
+                ).fetchone())
                 if observed or text_hash is None and candidate["text_hash"] is not None:
                     row = candidate
                     break
             if row is None and text_hash and (not matches or all(r["text_hash"] != text_hash for r in matches.values())):
-                row = db.execute("SELECT * FROM records WHERE text_hash=? ORDER BY id LIMIT 1", (text_hash,)).fetchone()
+                for candidate in db.execute("SELECT * FROM records WHERE text_hash=? ORDER BY id", (text_hash,)):
+                    try:
+                        _validate_article(_read(self.root / candidate["path"]))
+                    except ValueError:
+                        continue
+                    row = candidate
+                    break
                 if row:
                     matched_by.add("text")
 
@@ -175,8 +208,14 @@ class ArticleArchive:
                     name = _digest(name)[:24]
                 path = directory / f"{name}.json"
                 if path.exists():
-                    orphan = self._record(db, path, _read(path))
-                    if orphan["signature"] == signature:
+                    existing = _read(path)
+                    orphan = self._record(db, path, existing)
+                    try:
+                        _validate_article(existing)
+                        reusable = _prepare(existing)[2] == signature
+                    except ValueError:
+                        reusable = False
+                    if reusable:
                         row = orphan
                         action = "duplicate"
                     else:
@@ -229,7 +268,7 @@ def archive_run(run_dir: Path | str, archive_dir: Path | str | None = None) -> d
     prepared = [(p, _read(p)) for p in paths]
     article_ids = set()
     for _, article in prepared:
-        _prepare(article)
+        _validate_article(_prepare(article)[0])
         if article["article_id"] in article_ids:
             raise ValueError(f"Duplicate staged article_id: {article['article_id']}")
         article_ids.add(article["article_id"])

@@ -1,6 +1,6 @@
 # Редакционная проверка и формирование поста
 
-Вход — точная ревизия четырёх шагов, статьи, editorial/policy.json, снимки запуска и context_bundle.
+Вход — точная ревизия редакционных артефактов, статьи, editorial/policy.json, снимки запуска и context_bundle.
 Выполни check-editorial --step digest, сохрани digest_sha256 и editorial_sha256 результата.
 
 Сверь факты, числа, цитаты, даты, стадии и оригинальные заголовки/URL с Article.
