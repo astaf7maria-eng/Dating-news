@@ -53,7 +53,6 @@ class ResearchQATests(unittest.TestCase):
         self.observation["targets"] += [f"source:{sid}:{direction}" for r in plan['source_indexes']
                                         for sid in r['source_ids'] for direction in r['direction_ids']]
         (raw / "source_reviews.jsonl").write_text(json.dumps(self.observation, ensure_ascii=False) + "\n", encoding="utf-8")
-        (raw / "event_candidates.jsonl").write_text("", encoding="utf-8")
         self.ref = "raw/source_reviews.jsonl:1"
         archive_run(self.run)
 
@@ -84,6 +83,7 @@ class ResearchQATests(unittest.TestCase):
         return check_research_qa(self.run, ROOT)
 
     def test_local_success_is_not_semantic_approval_and_does_not_modify_corpus(self):
+        self.assertFalse((self.run / "raw/event_candidates.jsonl").exists())
         before = {p: p.read_bytes() for p in self.root.rglob("*.json")}
         audit = self.audit()
         self.assertEqual(audit["automatic_status"], "checks_passed")
@@ -153,6 +153,7 @@ class ResearchQATests(unittest.TestCase):
             self.check()
 
     def test_changed_archived_body_and_deleted_input_invalidate_review(self):
+        (self.run / "raw/event_candidates.jsonl").write_text('{"note": "Check the second update"}\n', encoding="utf-8")
         self.review()
         path = next((self.root / "archive").rglob("*.json"))
         original = path.read_bytes()
@@ -223,11 +224,37 @@ class ResearchQATests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Coverage"):
             self.check()
 
-    def test_malformed_journal_and_incomplete_event_note_are_reported(self):
+    def test_malformed_journal_is_reported(self):
         (self.run / "raw/broken.jsonl").write_text('{"unfinished":', encoding="utf-8")
-        (self.run / "raw/event_candidates.jsonl").write_text('{"actor": "Company"}\n', encoding="utf-8")
         codes = {f["code"] for f in self.audit()["findings"]}
-        self.assertTrue({"invalid_json", "event_note_fields"} <= codes)
+        self.assertIn("invalid_json", codes)
+
+    def test_optional_notes_need_no_event_fields_but_are_revision_bound(self):
+        notes = self.run / "raw/event_candidates.jsonl"
+        for content in ('', '{"note": "Check the second update"}\n', '{"actor": "Company"}\n'):
+            with self.subTest(content=content):
+                self.review()
+                notes.write_text(content, encoding="utf-8")
+                with self.assertRaisesRegex(ValueError, "stale"):
+                    self.check()
+                audit = self.audit()
+                self.assertEqual(audit["automatic_status"], "checks_passed")
+                self.review(audit)
+                self.assertEqual(self.check()["eligible_article_paths"], ["articles/one.json"])
+
+    def test_optional_notes_still_require_valid_jsonl_objects(self):
+        for content in ('{"unfinished":', '[]\n'):
+            with self.subTest(content=content):
+                (self.run / "raw/event_candidates.jsonl").write_text(content, encoding="utf-8")
+                self.assertIn("invalid_json", {f["code"] for f in self.audit()["findings"]})
+
+    def test_optional_note_does_not_replace_source_observation(self):
+        (self.run / "raw/event_candidates.jsonl").write_text('{"note": "Confirmed"}\n', encoding="utf-8")
+        review = self.review()
+        review["articles"][0]["evidence_refs"] = ["raw/event_candidates.jsonl:1"]
+        self.write_review(review)
+        with self.assertRaisesRegex(ValueError, "completed source"):
+            self.check()
 
     def test_changed_snapshot_or_reduced_coverage_is_blocked(self):
         plan = read_json(self.run / "search_plan.json")

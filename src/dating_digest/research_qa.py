@@ -88,18 +88,6 @@ def audit_research(run_dir: Path, project_dir: Path = Path(".")) -> dict:
         finding("missing_targets", "search_plan.json", "No coverage targets")
     if not (run_dir / "raw/source_reviews.jsonl").is_file():
         finding("missing_source_reviews", "raw/source_reviews.jsonl", "Source/window checks have not been saved")
-    notes = run_dir / "raw/event_candidates.jsonl"
-    if notes.is_file():
-        required = snapshots["editorial_policy"]["event_candidate"]["required_fields"]
-        for number, line in enumerate(notes.read_text(encoding="utf-8-sig").splitlines(), 1):
-            if not line.strip():
-                continue
-            try:
-                note = json.loads(line)
-            except ValueError:
-                continue  # Already reported as invalid_json above.
-            if not isinstance(note, dict) or set(required) - note.keys():
-                finding("event_note_fields", f"raw/event_candidates.jsonl:{number}", "Missing required event fields")
 
     validator = _validator(project_dir / "schemas/article.schema.json")
 
@@ -176,8 +164,6 @@ def audit_research(run_dir: Path, project_dir: Path = Path(".")) -> dict:
     receipt_path = run_dir / "article_archive.json"
     if staged_paths and not receipt_path.exists():
         finding("missing_archive_receipt", "article_archive.json", "Archive articles before research QA")
-    if staged_paths and not notes.is_file():
-        finding("missing_event_notes", "raw/event_candidates.jsonl", "Save candidate events or explicit exclusions")
     if receipt_path.exists():
         receipt = read_json(receipt_path)
         root = Path(receipt["archive_root"]).resolve()

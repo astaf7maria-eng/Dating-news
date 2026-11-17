@@ -117,6 +117,29 @@ class EditorialTests(unittest.TestCase):
         render_digest(self.run, self.project)
         self.assertEqual(self.digest['items'][0]['published_at'], '2026-11-15T00:00:00+03:00')
 
+    def test_analysis_keeps_multiple_events_per_article_without_preliminary_notes(self):
+        quote = '月額プランを開始。'
+        self.fixture.article['text'] += ' ' + quote
+        self.fixture.save_article()
+        archive_run(self.run)
+        self.fixture.review()
+        self.artifacts()
+        self.assertFalse((self.run / 'raw/event_candidates.jsonl').exists())
+        second = read_json(self.run / 'events/feature.json')
+        second.update(event_id='pricing', headline='Добавлен месячный план', section_id='monetization',
+                      mechanism='Месячная подписка',
+                      facts=[dict(claim='Запущен месячный план', article_id='one', evidence_quote=quote)])
+        write_json(self.run / 'events/pricing.json', second)
+        analysis = read_json(self.run / 'editorial/analysis.json')
+        analysis['event_ids'].append('pricing')
+        analysis['article_decisions'][0]['event_ids'].append('pricing')
+        write_json(self.run / 'editorial/analysis.json', analysis, replace=True)
+        self.assertEqual(check_editorial(self.run, 'analysis', self.project)['event_count'], 2)
+        analysis['article_decisions'][0]['event_ids'].remove('pricing')
+        write_json(self.run / 'editorial/analysis.json', analysis, replace=True)
+        with self.assertRaisesRegex(ValueError, 'Incomplete Article/event mapping'):
+            check_editorial(self.run, 'analysis', self.project)
+
     def test_partial_day_title_preserves_exact_moscow_window(self):
         title = digest_title(dict(window_start='2026-11-01T08:30:00Z', window_end_exclusive='2026-11-08T08:30:00Z'))
         self.assertIn('01.11.2026 11:30:00', title)

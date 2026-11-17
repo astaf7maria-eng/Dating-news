@@ -1,5 +1,5 @@
 {
-  "version": "0.10",
+  "version": "0.11",
   "status": "scope_confirmed_rubric_pending_calibration",
   "max_news_total": 10,
   "collection_limit": "Не ограничивать сбор десяткой: все подходящие материалы сохранять до рейтинга. Явный шум — только URL/title и причина исключения, без обязательной полной загрузки. Лимит 10 применяется к выпуску. При сборе корпуса подходящие новости сохраняются независимо от наличия вывода для Lovito.",
@@ -98,19 +98,8 @@
   },
   "event_candidate": {
     "path": "raw/event_candidates.jsonl",
-    "required_fields": [
-      "actor",
-      "company_ids",
-      "what_changed",
-      "mechanism",
-      "markets_or_audience",
-      "launch_stage",
-      "published_at",
-      "source_url",
-      "evidence",
-      "status"
-    ],
-    "rule": "Одна краткая запись на событие с доказательством нового факта и даты; неизвестное — null/unknown и needs_review. Сниппет не подтверждает полный текст. Для внешнего риска actor может быть органом/исследователем, company_ids — пустым. Это рабочие заметки, не замена Article или event.schema.json."
+    "required": false,
+    "rule": "Необязательные рабочие заметки без обязательных полей события; не создавать файл ради допуска QA. При сборе сохранять Article с оригинальным текстом, происхождение и доказательства даты, наблюдения поиска и покрытия, причины исключения. Проверять каждый Article и все существенные события в нём. Полноценный Event создавать один раз на этапе анализа по analyze-news.md; заметки не заменяют Article, доказательства или Event."
   },
   "strategic_selection": {
     "required": true,

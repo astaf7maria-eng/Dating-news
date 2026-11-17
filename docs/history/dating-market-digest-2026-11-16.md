@@ -2,7 +2,7 @@
 
 # Ты — senior product & strategy analyst в сфере DatingTech. Сначала прочитай
 
-[README.md](../README.md), ознакомься с проектом.
+[README.md](../../README.md), ознакомься с проектом.
 
 На текущий момент у тебя есть корпус статей (/C:/Users/mvastafurova/Desktop/Codex/Dating news/dating-news-digest/data/runs/20261116T000000+0300_9d3cbbc0/handoff-editorial.md). Далее твоя задача подготовить дайджест российского и международного dating-рынка для продуктовой и стратегической команды **Авито Ловито за 1-15ноября**.
 
