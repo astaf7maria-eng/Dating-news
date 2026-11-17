@@ -281,6 +281,37 @@ class EditorialTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertEqual(json.loads(result.stdout)['run_id'], self.inputs['run_id'])
 
+    def test_session_review_failure_requires_corrected_revision_before_local_handoff(self):
+        self.artifacts()
+        checked = check_editorial(self.run, 'digest', self.project)
+        review = dict(schema_version='0.1', digest_id=self.digest['digest_id'], revision=1,
+                      result='failed', reviewer='session_agent_self_review',
+                      checked_at=datetime.now(timezone.utc).isoformat(),
+                      digest_sha256=checked['digest_sha256'], editorial_sha256=checked['editorial_sha256'],
+                      issues=[dict(severity='blocking', category='so_what', location='items/0/so_what',
+                                   message='Separate a hypothesis from a demonstrated effect.',
+                                   suggested_fix='State the evidence limit explicitly.')])
+        write_json(self.run / 'review.json', review)
+        with self.assertRaisesRegex(ValueError, 'blocking findings'):
+            render_digest(self.run, self.project)
+        self.assertFalse((self.run / 'rendered/mattermost.md').exists())
+
+        self.digest['revision'] = 2
+        self.digest['items'][0]['so_what']['text'] = (
+            'Компания делает взаимный выбор частью ценности продукта. '
+            'Для Lovito это гипотеза о роли содержательного общения, а не доказанный эффект.')
+        write_json(self.run / 'digest.json', self.digest, replace=True)
+        with self.assertRaisesRegex(ValueError, 'another editorial revision'):
+            render_digest(self.run, self.project)
+        checked = check_editorial(self.run, 'digest', self.project)
+        review.update(revision=2, result='passed', issues=[], digest_sha256=checked['digest_sha256'],
+                      editorial_sha256=checked['editorial_sha256'])
+        write_json(self.run / 'review.json', review, replace=True)
+        receipt = render_digest(self.run, self.project)
+        self.assertEqual(receipt['publication_status'], 'local_file')
+        self.assertIn(self.digest['items'][0]['so_what']['text'],
+                      (self.run / receipt['output']).read_text(encoding='utf-8'))
+
     def test_rehashed_news_cannot_replace_qa_approved_article(self):
         self.artifacts()
         path = self.run / 'editorial/news.json'
