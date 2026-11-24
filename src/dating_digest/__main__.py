@@ -162,6 +162,9 @@ def validate_configs(configs: dict, schema_dir: Path = Path("schemas")) -> None:
     limit = policy["max_news_total"]
     if type(limit) is not int or not 1 <= limit <= digest["properties"]["items"]["maxItems"]:
         raise ValueError("Editorial limit exceeds the digest schema limit")
+    target = policy.get("target_news_total", min(10, limit))
+    if type(target) is not int or not 1 <= target <= limit:
+        raise ValueError("Editorial target must be between 1 and the limit")
     golden = configs["golden_set"]
     for case in golden["cases"] + golden.get("marketing_reference_cases", []):
         references(case["company_ids"], required, "golden-set company")

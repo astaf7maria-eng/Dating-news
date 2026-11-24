@@ -55,8 +55,11 @@ def prepare_editorial(run_dir: Path, project_dir: Path = ROOT, *, verified_subse
     editorial = run_dir / "editorial"
     policy_source = Path(editorial_policy_path) if editorial_policy_path else run_dir / "config_snapshot/editorial_policy.json"
     policy = read_json(policy_source)
-    _require(type(policy["max_news_total"]) is int and 1 <= policy["max_news_total"] <= 10,
-             "Editorial policy limit must be between 1 and 10")
+    _require(type(policy["max_news_total"]) is int and 1 <= policy["max_news_total"] <= 13,
+             "Editorial policy limit must be between 1 and 13")
+    target = policy.get("target_news_total", min(10, policy["max_news_total"]))
+    _require(type(target) is int and 1 <= target <= policy["max_news_total"],
+             "Editorial target must be between 1 and the limit")
     frozen_policy = read_json(run_dir / "config_snapshot/editorial_policy.json")
     _require({s["id"] for s in policy["sections"]} == {s["id"] for s in frozen_policy["sections"]},
              "Editorial policy sections differ from the run")
@@ -244,7 +247,11 @@ def check_editorial(run_dir: Path, step: str = "digest", project_dir: Path = ROO
             return (-row["total_score"], -evidence, -datetime.fromisoformat(publication_timestamp(article)).timestamp(), row["event_id"])
         _require(rows == sorted(rows, key=order), "Ranking must follow descending score, evidence, freshness and ID")
         selected = [row["event_id"] for row in rows if row["decision"] == "include"]
-        _require(len(selected) <= min(10, policy["max_news_total"]), "Too many selected news items")
+        _require(len(selected) <= min(13, policy["max_news_total"]), "Too many selected news items")
+        target = policy.get("target_news_total", min(10, policy["max_news_total"]))
+        if len(selected) > target:
+            _require(isinstance(ranking.get("expansion_reason"), str)
+                     and bool(ranking["expansion_reason"].strip()), "Explain why additional important news must be included")
         result["selected_count"] = len(selected)
     if step in {"summaries", "digest"}:
         summaries = _artifact(run_dir, "editorial/summaries.json", inputs, fingerprints)["items"]
@@ -268,7 +275,7 @@ def check_editorial(run_dir: Path, step: str = "digest", project_dir: Path = ROO
         _require(set(inputs["coverage_notes"]) <= set(digest["coverage_notes"]), "Preserve coverage limitations")
         if inputs["mode"] == "verified_subset":
             _require(digest["status"] == "draft", "Verified-subset workflow produces a draft")
-        _require(len(selected) == min(10, policy["max_news_total"])
+        _require(len(selected) >= target
                  or bool((digest["shortfall_reason"] or "").strip()), "Explain an editorial shortfall internally")
         sections = {s["section_id"]: s for s in digest["sections"]}
         _require(len(sections) == len(digest["sections"]) == 7, "Digest requires seven unique internal sections")

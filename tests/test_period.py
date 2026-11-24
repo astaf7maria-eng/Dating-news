@@ -16,6 +16,13 @@ from dating_digest.orchestration.period import choose_period
 
 
 class ConfigAndWriteTests(unittest.TestCase):
+    def test_legacy_ten_item_policy_without_target_remains_valid(self):
+        root = Path(__file__).resolve().parents[1]
+        configs = {name: read_json(root / "config" / f"{name}.json") for name in CONFIG_NAMES}
+        configs["editorial_policy"].pop("target_news_total")
+        configs["editorial_policy"]["max_news_total"] = 10
+        validate_configs(configs, root / "schemas")
+
     def test_invalid_cross_config_links_and_ranking_are_rejected(self):
         root = Path(__file__).resolve().parents[1]
         configs = {name: read_json(root / "config" / f"{name}.json") for name in CONFIG_NAMES}
@@ -33,7 +40,10 @@ class ConfigAndWriteTests(unittest.TestCase):
             lambda c: c["pipeline"]["ranking"]["weights"].update(unknown=0),
             lambda c: c["pipeline"]["ranking"]["weights"].update(business_relevance=True),
             lambda c: c["pipeline"]["ranking"].update(weights=[]),
-            lambda c: c["editorial_policy"].update(max_news_total=11),
+            lambda c: c["editorial_policy"].update(max_news_total=14),
+            lambda c: c["editorial_policy"].update(target_news_total=14),
+            lambda c: c["editorial_policy"].update(target_news_total=True),
+            lambda c: c["editorial_policy"].update(target_news_total=0),
         ):
             with self.subTest(mutation=mutate):
                 invalid = copy.deepcopy(configs)

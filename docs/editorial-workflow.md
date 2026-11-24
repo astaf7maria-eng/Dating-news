@@ -16,7 +16,7 @@ editorial/instructions.md. После успешной проверки шага
 
 Дополнительный поиск выполняется при проверке собранных материалов, до prepare-editorial.
 Найденные подходящие публикации проходят сохранение Article, архивирование и повторную QA.
-Редакционные анализ и отбор до десяти новостей, саммари, so what и финальная структура
+Редакционные анализ и отбор около десяти новостей (до 13 при особо важных событиях), саммари, so what и финальная структура
 Mattermost используют закрытый корпус. При нехватке подтверждения редактор фиксирует
 пробел и возвращает его в QA исследования. После дополнения корпуса QA и подготовка
 редакционных входов повторяются. Изменение журналов поиска также отменяет прежний допуск.
@@ -62,7 +62,7 @@ analysis.event_ids перечисляет карточки событий. Event
 Шаг 2 оценивает каждое событие. ranking.items содержит event_id, criteria, total_score, decision и reason.
 Критерии и веса совпадают со снимком pipeline. Оценки имеют rationale.
 Сортировка идёт по total_score, evidence_quality, свежести primary Article и event_id.
-decision принимает include или exclude. strategic_assessment раскрывает competitor_logic, strategic_signal, lovito_implication, evidence_limits, context_refs и has_strategic_value. Для включения требуется содержательный стратегический вывод. Выбираются максимум десять событий.
+decision принимает include или exclude. strategic_assessment раскрывает competitor_logic, strategic_signal, lovito_implication, evidence_limits, context_refs и has_strategic_value. Для включения требуется содержательный стратегический вывод. Ориентир — target_news_total (по умолчанию 10), предел — max_news_total (до 13). При превышении ориентира ranking.expansion_reason объясняет, какие особо важные события нельзя упустить; items[].reason обосновывает каждый дополнительный пункт. Меньшее число сильных событий не дополняется слабыми; shortfall_reason объясняет недобор относительно ориентира, а не предела 13. Старые снимки без target_news_total используют min(10, max_news_total); старые запуски автоматически не меняются. Для применения новой политики к существующему корпусу используйте описанный ниже --editorial-policy и повторите редакционные этапы.
 
 Шаг 3 сохраняет items выбранных событий в том же порядке с полями event_id, company,
 original_title, original_url, published_at и summary из 2–3 предложений.

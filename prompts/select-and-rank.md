@@ -32,7 +32,7 @@ business_relevance отражает стратегическое значени�
 Наличие идеи A/B-теста само по себе не повышает оценку. Сохраняй веса снимка.
 
 Сортируй items по total_score, evidence_quality, свежести primary Article и event_id.
-Выбери до min(10, max_news_total) событий без квот и повторов. excluded/needs_review исключаются.
+Ориентир — target_news_total из editorial/policy.json (по умолчанию min(10, max_news_total)). Если за пределами ориентировочной десятки остаются особо важные самостоятельные события, включи их: максимум max_news_total, не более 13. Не исключай значимое событие только ради краткости. Для каждого дополнительного события поясни в items[].reason, почему его нельзя упустить, и заполни ranking.json.expansion_reason общим обоснованием расширения. Само наличие 13 подходящих кандидатов не является основанием включить всех. Если сильных событий меньше 10, не добирай слабые. Квот и повторов нет; excluded/needs_review исключаются.
 Формат Mattermost сохраняет единый порядок стратегической ценности, rank и display_order совпадают.
 
 Выполни `python -m dating_digest check-editorial --run-dir <run_dir> --step selection`.

@@ -30,13 +30,13 @@
     "shortfall_reason": {"type": ["string", "null"]},
     "coverage_notes": {"type": "array", "items": {"type": "string"}},
     "items": {
-      "type": "array", "maxItems": 10,
+      "type": "array", "maxItems": 13,
       "items": {
         "type": "object",
         "required": ["rank", "display_order", "section_id", "event_id", "headline", "summary", "published_at", "so_what", "sources", "editorial_override_reason"],
         "properties": {
-          "rank": {"type": "integer", "minimum": 1, "maximum": 10},
-          "display_order": {"type": "integer", "minimum": 1, "maximum": 10},
+          "rank": {"type": "integer", "minimum": 1, "maximum": 13},
+          "display_order": {"type": "integer", "minimum": 1, "maximum": 13},
           "section_id": {"$ref": "#/$defs/section_id"},
           "tags": {"type": "array", "items": {"$ref": "#/$defs/section_id"}, "uniqueItems": true},
           "published_at": {"type": "string", "format": "date-time"},

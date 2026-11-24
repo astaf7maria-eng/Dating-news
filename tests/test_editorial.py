@@ -107,6 +107,50 @@ class EditorialTests(unittest.TestCase):
         self.assertIn(self.inputs['coverage_notes'][0],
                       (self.run / 'rendered/mattermost.md').read_text(encoding='utf-8'))
 
+    def test_ten_is_target_and_important_expansion_to_thirteen_is_reviewable(self):
+        self.artifacts()
+        event = read_json(self.run / 'events/feature.json')
+        ranking = read_json(self.run / 'ranking.json')
+        row = ranking['items'][0]
+        summary = read_json(self.run / 'editorial/summaries.json')['items'][0]
+        item = self.digest['items'][0]
+        identities = [f'news{i:02}' for i in range(14)]
+        for identity in identities:
+            write_json(self.run / f'events/{identity}.json', dict(event, event_id=identity))
+        for count in (10, 11, 12, 13, 14):
+            with self.subTest(count=count):
+                selected = identities[:count]
+                write_json(self.run / 'editorial/analysis.json', dict(self.base, event_ids=selected,
+                           article_decisions=[dict(article_id='one', event_ids=selected, reason='All changes assessed')]), replace=True)
+                ranking['items'] = [dict(row, event_id=identity) for identity in selected]
+                ranking.pop('expansion_reason', None)
+                write_json(self.run / 'ranking.json', ranking, replace=True)
+                if count == 14:
+                    with self.assertRaisesRegex(ValueError, 'Too many selected'):
+                        check_editorial(self.run, 'selection', self.project)
+                    continue
+                if count > 10:
+                    with self.assertRaisesRegex(ValueError, 'additional important news'):
+                        check_editorial(self.run, 'selection', self.project)
+                    ranking['expansion_reason'] = 'Additional material changes cannot be omitted from this period.'
+                    write_json(self.run / 'ranking.json', ranking, replace=True)
+                write_json(self.run / 'editorial/summaries.json', dict(self.base,
+                           items=[dict(summary, event_id=identity) for identity in selected]), replace=True)
+                self.digest.update(shortfall_reason=None, items=[dict(item, event_id=identity,
+                                   rank=i, display_order=i) for i, identity in enumerate(selected, 1)])
+                write_json(self.run / 'digest.json', self.digest, replace=True)
+                self.approve()
+                render_digest(self.run, self.project)
+                markdown = (self.run / 'rendered/mattermost.md').read_text(encoding='utf-8')
+                self.assertEqual(markdown.count('### '), count)
+
+    def test_shortfall_is_measured_against_target_not_expanded_limit(self):
+        self.artifacts()
+        self.digest['shortfall_reason'] = None
+        write_json(self.run / 'digest.json', self.digest, replace=True)
+        with self.assertRaisesRegex(ValueError, 'shortfall'):
+            check_editorial(self.run, 'digest', self.project)
+
     def test_date_only_article_survives_the_normal_editorial_route(self):
         self.fixture.article.update(published_at=None, date_precision='day', published_date_raw='2026-11-15')
         self.fixture.save_article()
